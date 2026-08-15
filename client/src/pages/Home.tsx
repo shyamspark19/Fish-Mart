@@ -192,7 +192,24 @@ const FALLBACK_PRODUCTS: Product[] = [
       try {
         const supaProducts = await fetchSupabaseProducts()
         if (supaProducts && supaProducts.length > 0) {
-          setProducts(supaProducts as any)
+          const mapped = supaProducts.map((p: any) => ({
+            _id: p.id || p._id,
+            name: p.name,
+            description: p.description,
+            category: p.category,
+            images: p.images || [],
+            weights: p.weights || [],
+            cuttingOptions: p.cuttingOptions || p.cutting_options || [],
+            stock: p.stock || 50,
+            badge: p.badge,
+            netWeight: p.netWeight || p.net_weight,
+            grossWeight: p.grossWeight || p.gross_weight,
+            pieces: p.pieces,
+            deliveryTime: p.deliveryTime || p.delivery_time,
+            rating: p.rating,
+            reviewsCount: p.reviewsCount || p.reviews_count
+          }))
+          setProducts(mapped as any)
           setError('')
           return
         }

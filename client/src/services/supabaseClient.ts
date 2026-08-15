@@ -3,12 +3,32 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zubxrgefekxlossvqdxj.supabase.co'
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_G7aTVQe4JqhnzUnAWwI-2g_2CtjgYFM'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+/**
+ * Checks if a valid Supabase Anon/Publishable Key (sb_publishable_... or eyJ...) is provided.
+ */
+export const isSupabaseConfigured = (): boolean => {
+  return Boolean(
+    supabaseUrl &&
+    supabaseAnonKey &&
+    (supabaseAnonKey.startsWith('sb_publishable_') || supabaseAnonKey.startsWith('ey'))
+  )
+}
+
+// Use provided key or fallback dummy key to prevent initialization crash
+const safeAnonKey = isSupabaseConfigured() 
+  ? supabaseAnonKey 
+  : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder'
+
+export const supabase = createClient(supabaseUrl, safeAnonKey)
 
 /**
  * Supabase Authentication Helper: Sign Up User with Role
  */
 export async function supabaseSignUp(email: string, password: string, name: string, role: 'CUSTOMER' | 'ADMIN' = 'CUSTOMER') {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase publishable key is missing. Please set VITE_SUPABASE_ANON_KEY in client/.env')
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -28,6 +48,10 @@ export async function supabaseSignUp(email: string, password: string, name: stri
  * Supabase Authentication Helper: Sign In User
  */
 export async function supabaseSignIn(email: string, password: string) {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase publishable key is missing. Please set VITE_SUPABASE_ANON_KEY in client/.env')
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password

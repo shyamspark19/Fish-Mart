@@ -37,7 +37,7 @@ export default function Login() {
         navigate('/')
       }
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || 'Authentication failed. Please check your credentials.')
+      setErrorMsg(err.message || err.response?.data?.message || 'Authentication failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }

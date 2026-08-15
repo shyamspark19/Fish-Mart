@@ -26,7 +26,7 @@ export default function Register() {
         navigate('/')
       }
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || 'Registration failed. Please try again.')
+      setErrorMsg(err.message || err.response?.data?.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
