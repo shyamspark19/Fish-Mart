@@ -19,7 +19,7 @@ export default function Register() {
     setLoading(true)
     setErrorMsg('')
     try {
-      await auth.register(name, email, password)
+      await auth.register(name, email, password, selectedRole)
       if (selectedRole === 'ADMIN') {
         navigate('/admin')
       } else {

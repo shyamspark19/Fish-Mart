@@ -5,7 +5,7 @@ interface AuthContextValue {
   user: any | null
   token: string | null
   login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
+  register: (name: string, email: string, password: string, role?: string) => Promise<void>
   logout: () => void
 }
 
@@ -24,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
           setUser(null)
           setToken(null)
+          authService.setAuthToken(null)
           localStorage.removeItem('fm_token')
         }
       }
@@ -36,24 +37,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (resp.token) {
       setToken(resp.token)
       localStorage.setItem('fm_token', resp.token)
-      const meResp = await authService.me(resp.token)
-      setUser(meResp.user)
+      setUser(resp.user)
     }
   }
 
-  const register = async (name: string, email: string, password: string) => {
-    const resp = await authService.register({ name, email, password })
+  const register = async (name: string, email: string, password: string, role?: string) => {
+    const resp = await authService.register({ name, email, password, role })
     if (resp.token) {
       setToken(resp.token)
       localStorage.setItem('fm_token', resp.token)
-      const meResp = await authService.me(resp.token)
-      setUser(meResp.user)
+      setUser(resp.user)
     }
   }
 
   const logout = () => {
     setUser(null)
     setToken(null)
+    authService.setAuthToken(null)
     localStorage.removeItem('fm_token')
   }
 

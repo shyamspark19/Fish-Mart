@@ -4,15 +4,16 @@ import jwt from 'jsonwebtoken'
 import User from '../models/User'
 
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password } = req.body
+  const { name, email, password, role } = req.body
   try {
     const existing = await User.findOne({ email })
     if (existing) return res.status(400).json({ message: 'Email already registered' })
 
     const hash = await bcrypt.hash(password, 10)
-    const user = await User.create({ name, email, password: hash })
+    const userRole = role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER'
+    const user = await User.create({ name, email, password: hash, role: userRole })
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
-    return res.json({ user: { id: user._id, name: user.name, email: user.email }, token })
+    return res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role }, token })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ message: 'Server error' })
@@ -27,7 +28,7 @@ export const login = async (req: Request, res: Response) => {
     const ok = await bcrypt.compare(password, user.password)
     if (!ok) return res.status(400).json({ message: 'Invalid credentials' })
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
-    return res.json({ user: { id: user._id, name: user.name, email: user.email }, token })
+    return res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role }, token })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ message: 'Server error' })

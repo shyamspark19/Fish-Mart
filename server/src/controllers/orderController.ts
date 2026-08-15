@@ -9,16 +9,28 @@ function generateOrderNumber() {
 
 export const createOrder = async (req: Request, res: Response) => {
   const userId = (req as any).user.id
-  const cart = await Cart.findOne({ user: userId })
-  if (!cart || cart.items.length === 0) return res.status(400).json({ message: 'Cart is empty' })
+  let items = req.body.items
+  let cart = null
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    cart = await Cart.findOne({ user: userId })
+    if (!cart || cart.items.length === 0) return res.status(400).json({ message: 'Cart is empty' })
+    items = cart.items
+  }
 
   // Calculate subtotal and check stock
   let subtotal = 0
-  for (const item of cart.items) {
-    const product = await Product.findById(item.product)
-    if (!product) return res.status(400).json({ message: `Product ${item.name} not found` })
-    if (item.quantity > product.stock) return res.status(400).json({ message: `Insufficient stock for ${item.name}` })
-    subtotal += item.price * item.quantity
+  for (const item of items) {
+    const prodId = item.product || item.productId
+    if (prodId) {
+      try {
+        const product = await Product.findById(prodId)
+        if (product && item.quantity > product.stock) {
+          return res.status(400).json({ message: `Insufficient stock for ${product.name}` })
+        }
+      } catch (e) {}
+    }
+    subtotal += (Number(item.price) || 0) * (Number(item.quantity) || 1)
   }
 
   const MIN_ORDER = Number(process.env.MIN_ORDER || 199)
@@ -29,32 +41,40 @@ export const createOrder = async (req: Request, res: Response) => {
 
   const deliveryFee = subtotal >= FREE_ABOVE ? 0 : DELIVERY_FEE
   const tax = Math.round(subtotal * 0.05)
-  const total = subtotal + deliveryFee + tax
+  const discount = Number(req.body.discount || 0)
+  const total = Math.max(0, subtotal + deliveryFee + tax - discount)
 
   const order = await Order.create({
     orderNumber: generateOrderNumber(),
     user: userId,
-    items: cart.items,
+    items,
     address: req.body.address || {},
     deliverySlot: req.body.deliverySlot || { type: 'ASAP' },
     paymentMethod: req.body.paymentMethod || 'COD',
-    paymentStatus: 'PENDING',
+    paymentStatus: req.body.paymentMethod === 'COD' ? 'PENDING' : 'COMPLETED',
     orderStatus: 'PLACED',
     subtotal,
-    discount: 0,
+    discount,
     deliveryFee,
     tax,
     total
   })
 
   // Reduce stock
-  for (const item of cart.items) {
-    await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } })
+  for (const item of items) {
+    const prodId = item.product || item.productId
+    if (prodId) {
+      try {
+        await Product.findByIdAndUpdate(prodId, { $inc: { stock: -(item.quantity || 1) } })
+      } catch (err) {}
+    }
   }
 
-  // Clear cart
-  ;(cart.items as any) = []
-  await cart.save()
+  // Clear cart if exists
+  if (cart) {
+    ;(cart.items as any) = []
+    await cart.save()
+  }
 
   return res.json({ order })
 }
