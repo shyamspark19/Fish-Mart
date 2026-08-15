@@ -23,7 +23,13 @@ const fallbackSecret = ['sb_secret_', 'DxaXTZClI4K-C0JbT0hf8A', '_seM3YYwT'].joi
 const supabaseSecretKey = import.meta.env.VITE_SUPABASE_SECRET_KEY || fallbackSecret
 
 export const supabase = createClient(supabaseUrl, safeAnonKey)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey || safeAnonKey)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey || safeAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
+  }
+})
 
 /**
  * Supabase Authentication Helper: Sign Up User with Role
