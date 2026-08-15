@@ -701,56 +701,131 @@ export default function AdminDashboard() {
 
       {/* TAB 3: ORDER MANAGEMENT */}
       {activeTab === 'ORDERS' && (
-        <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 shadow-2xl space-y-4">
-          <h3 className="text-lg font-black text-amber-400">Placed Customer Orders ({safeOrders.length})</h3>
-          {safeOrders.length === 0 ? (
-            <div className="text-center py-12 text-stone-500 text-xs font-bold">No customer orders placed yet.</div>
+        <div className="bg-stone-900 border border-stone-800 rounded-3xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="p-5 border-b border-stone-800 flex flex-wrap items-center justify-between gap-3 bg-stone-950/60">
+            <div>
+              <h3 className="text-base font-black text-amber-400">Live Customer Orders</h3>
+              <p className="text-[11px] text-stone-400 mt-0.5">{safeOrders.length} orders · Auto-updated from Supabase</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Live stats strip */}
+              {(['PLACED', 'CONFIRMED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'] as const).map(s => {
+                const count = safeOrders.filter(o => o.orderStatus === s).length
+                const colorMap: Record<string, string> = {
+                  PLACED: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+                  CONFIRMED: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+                  PREPARING: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+                  OUT_FOR_DELIVERY: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+                  DELIVERED: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                }
+                return count > 0 ? (
+                  <span key={s} className={`text-[10px] font-black px-2.5 py-1 rounded-xl border ${colorMap[s]}`}>
+                    {s.replace('_', ' ')} {count}
+                  </span>
+                ) : null
+              })}
+              <button
+                onClick={fetchData}
+                className="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 rounded-xl font-black text-[10px] uppercase tracking-wider hover:from-orange-600 hover:to-amber-700 transition-all"
+              >
+                ↻ Refresh
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-12 text-center text-xs font-bold text-amber-400">Loading orders...</div>
+          ) : safeOrders.length === 0 ? (
+            <div className="text-center py-16 text-stone-500 text-xs font-bold">
+              <div className="text-3xl mb-3">🛒</div>
+              <div>No customer orders placed yet.</div>
+              <div className="text-stone-600 mt-1">Orders will appear here in real-time as customers checkout.</div>
+            </div>
           ) : (
-            <div className="space-y-4">
-              {safeOrders.map(o => (
-                <div key={o._id} className="bg-stone-950 border border-stone-800 rounded-2xl p-5 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800 pb-3">
-                    <div>
-                      <span className="text-xs font-black text-orange-400 font-mono">Order #{o.orderNumber || o._id}</span>
-                      <div className="text-[11px] text-stone-400 font-medium">Customer: {o.address?.name || o.user?.name || 'Guest'} ({o.address?.phone || '9876543210'})</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-black text-white">₹{o.total} ({o.paymentMethod})</span>
-                      {/* Status Selector */}
-                      <select
-                        value={o.orderStatus || 'PLACED'}
-                        onChange={(e) => handleUpdateOrderStatus(o._id, e.target.value)}
-                        className="bg-stone-900 border border-orange-500/30 text-xs font-extrabold text-amber-300 rounded-xl p-2 focus:outline-none"
-                      >
-                        {['PLACED', 'CONFIRMED', 'PREPARING', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'].map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-stone-300 font-medium">
-                    📍 Delivery Address: <strong>{o.address?.street || o.address?.area}, {o.address?.city || 'Chennai'}</strong>
-                  </div>
-
-                  {/* Ordered Items Breakdown */}
-                  {Array.isArray(o.items) && o.items.length > 0 && (
-                    <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800/80 space-y-1.5">
-                      <div className="text-[11px] font-black uppercase text-amber-400 tracking-wider">Ordered Items ({o.items.length}):</div>
-                      {o.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between text-xs text-stone-200">
-                          <span>
-                            • <strong className="text-white">{item.name || 'Seafood Item'}</strong>{' '}
-                            <span className="text-stone-400">({item.weightLabel || item.weight || '300g'} | {item.cutting || 'Standard Cut'})</span>{' '}
-                            <span className="text-amber-400 font-bold">x{item.quantity || 1}</span>
+            <div className="divide-y divide-stone-800">
+              {safeOrders.map(o => {
+                const statusColors: Record<string, string> = {
+                  PLACED: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+                  CONFIRMED: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+                  PREPARING: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+                  PACKED: 'text-violet-400 bg-violet-500/10 border-violet-500/30',
+                  OUT_FOR_DELIVERY: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+                  DELIVERED: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+                  CANCELLED: 'text-rose-400 bg-rose-500/10 border-rose-500/30'
+                }
+                const orderTime = o.createdAt
+                  ? new Date(o.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                  : '—'
+                const totalItems = Array.isArray(o.items) ? o.items.reduce((s: number, i: any) => s + (i.quantity || 1), 0) : 0
+                return (
+                  <div key={o._id} className="p-5 hover:bg-stone-800/30 transition-colors">
+                    {/* Order header row */}
+                    <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-sm font-black text-orange-400 font-mono">#{o.orderNumber || o._id?.slice(0, 8).toUpperCase()}</span>
+                          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${statusColors[o.orderStatus] || 'text-stone-400 bg-stone-800 border-stone-700'}`}>
+                            {(o.orderStatus || 'PLACED').replace(/_/g, ' ')}
                           </span>
-                          <span className="font-bold text-emerald-400">₹{(item.price || 0) * (item.quantity || 1)}</span>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-3 text-[11px]">
+                          <span className="text-white font-bold">👤 {o.address?.name || 'Customer'}</span>
+                          <span className="text-stone-400">📞 {o.address?.phone || '—'}</span>
+                          <span className="text-stone-500">🕐 {orderTime}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="text-base font-black text-white">₹{Number(o.total).toLocaleString()}</div>
+                          <div className="text-[10px] text-stone-400 font-medium">{o.paymentMethod} · {totalItems} item{totalItems !== 1 ? 's' : ''}</div>
+                        </div>
+                        <select
+                          value={o.orderStatus || 'PLACED'}
+                          onChange={(e) => handleUpdateOrderStatus(o._id, e.target.value)}
+                          className="bg-stone-900 border border-orange-500/30 text-xs font-extrabold text-amber-300 rounded-xl px-3 py-2 focus:outline-none focus:border-orange-500 cursor-pointer"
+                        >
+                          {['PLACED', 'CONFIRMED', 'PREPARING', 'PACKED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'].map(s => (
+                            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Address row */}
+                    <div className="text-[11px] text-stone-400 mb-3 flex items-start gap-1.5">
+                      <span>📍</span>
+                      <span className="text-stone-300">{o.address?.street || o.address?.area || 'Address not provided'}{o.address?.city ? `, ${o.address.city}` : ''}</span>
+                    </div>
+
+                    {/* Items breakdown */}
+                    {Array.isArray(o.items) && o.items.length > 0 && (
+                      <div className="bg-stone-950 border border-stone-800 rounded-xl p-3 space-y-2">
+                        <div className="text-[10px] font-black uppercase text-amber-400 tracking-wider mb-1">
+                          🐟 Ordered Items ({o.items.length})
+                        </div>
+                        {o.items.map((item: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2 text-stone-200">
+                              <span className="text-amber-400 font-black">×{item.quantity || 1}</span>
+                              <span className="font-bold text-white">{item.name || 'Seafood Item'}</span>
+                              <span className="text-stone-500">
+                                {item.weightLabel || item.weight ? `· ${item.weightLabel || item.weight}` : ''}
+                                {item.cutting ? ` · ${item.cutting}` : ''}
+                              </span>
+                            </div>
+                            <span className="font-black text-emerald-400">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</span>
+                          </div>
+                        ))}
+                        <div className="pt-2 border-t border-stone-800 flex justify-between text-xs font-black">
+                          <span className="text-stone-400">Order Total</span>
+                          <span className="text-white">₹{Number(o.total).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
