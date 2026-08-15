@@ -131,7 +131,7 @@ export default function AdminDashboard() {
           ])
           if (prods.length === 0) prods = prodRes.data || []
           if (ords.length === 0) ords = ordRes.data || []
-        } catch (e) {}
+        } catch (e) { }
       }
 
       setProducts(prods || [])

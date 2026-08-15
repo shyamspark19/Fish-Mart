@@ -15,21 +15,15 @@ export const isSupabaseConfigured = (): boolean => {
 }
 
 // Fallback dummy key to prevent initialization crash
-const safeAnonKey = isSupabaseConfigured() 
-  ? supabaseAnonKey 
+const safeAnonKey = isSupabaseConfigured()
+  ? supabaseAnonKey
   : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder'
 
-const fallbackSecret = ['sb_secret_', 'DxaXTZClI4K-C0JbT0hf8A', '_seM3YYwT'].join('')
-const supabaseSecretKey = import.meta.env.VITE_SUPABASE_SECRET_KEY || fallbackSecret
-
 export const supabase = createClient(supabaseUrl, safeAnonKey)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey || safeAnonKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false
-  }
-})
+
+// supabaseAdmin is an alias — RLS is disabled on products/orders tables
+// so the anon key can freely read/write from the browser
+export const supabaseAdmin = supabase
 
 /**
  * Supabase Authentication Helper: Sign Up User with Role
@@ -75,20 +69,15 @@ export async function supabaseSignIn(email: string, password: string) {
  * Supabase Database Helper: Fetch All Seafood Products
  */
 export async function fetchSupabaseProducts() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.warn('Supabase product fetch warning, trying fallback:', error.message)
-    const { data: fallbackData } = await supabase
-      .from('products')
-      .select('*')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-    return fallbackData || []
+    console.warn('Supabase product fetch error:', error.message)
+    return []
   }
   return data || []
 }
@@ -125,13 +114,13 @@ export async function createSupabaseOrder(orderPayload: any) {
  * Supabase Database Helper: Fetch All Orders for Admin
  */
 export async function fetchSupabaseOrders() {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('orders')
     .select('*')
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.warn('Supabase orders fetch warning:', error.message)
+    console.warn('Supabase orders fetch error:', error.message)
     return []
   }
   return data || []
@@ -141,14 +130,14 @@ export async function fetchSupabaseOrders() {
  * Supabase Database Helper: Update Order Status
  */
 export async function updateSupabaseOrderStatus(orderId: string, status: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('orders')
     .update({ status })
     .eq('id', orderId)
     .select()
 
   if (error) {
-    console.warn('Supabase order status update warning:', error.message)
+    console.warn('Supabase order status update error:', error.message)
     throw error
   }
   return data?.[0]
@@ -166,15 +155,15 @@ export async function createSupabaseProduct(payload: any) {
     weights: payload.weights || [],
     cutting_options: payload.cuttingOptions || [],
     stock: Number(payload.stock) || 50,
-    badge: payload.badge,
-    net_weight: payload.netWeight,
-    gross_weight: payload.grossWeight,
-    pieces: payload.pieces,
+    badge: payload.badge || null,
+    net_weight: payload.netWeight || null,
+    gross_weight: payload.grossWeight || null,
+    pieces: payload.pieces || null,
     delivery_time: payload.deliveryTime || 'Today in 90 mins',
     is_active: true
   }
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('products')
     .insert([insertPayload])
     .select()
@@ -190,7 +179,7 @@ export async function createSupabaseProduct(payload: any) {
  * Supabase Database Helper: Edit Product
  */
 export async function updateSupabaseProduct(productId: string, payload: any) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('products')
     .update({
       name: payload.name,
@@ -199,17 +188,17 @@ export async function updateSupabaseProduct(productId: string, payload: any) {
       images: payload.images || [],
       weights: payload.weights || [],
       cutting_options: payload.cuttingOptions || [],
-      stock: payload.stock,
-      badge: payload.badge,
-      net_weight: payload.netWeight,
-      gross_weight: payload.grossWeight,
-      pieces: payload.pieces
+      stock: Number(payload.stock),
+      badge: payload.badge || null,
+      net_weight: payload.netWeight || null,
+      gross_weight: payload.grossWeight || null,
+      pieces: payload.pieces || null
     })
     .eq('id', productId)
     .select()
 
   if (error) {
-    console.warn('Supabase product update warning:', error.message)
+    console.warn('Supabase product update error:', error.message)
     throw error
   }
   return data?.[0]
@@ -219,14 +208,14 @@ export async function updateSupabaseProduct(productId: string, payload: any) {
  * Supabase Database Helper: Update Stock
  */
 export async function updateSupabaseProductStock(productId: string, newStock: number) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('products')
     .update({ stock: newStock })
     .eq('id', productId)
     .select()
 
   if (error) {
-    console.warn('Supabase stock update warning:', error.message)
+    console.warn('Supabase stock update error:', error.message)
     throw error
   }
   return data?.[0]
@@ -236,14 +225,14 @@ export async function updateSupabaseProductStock(productId: string, newStock: nu
  * Supabase Database Helper: Delete Product (Soft delete)
  */
 export async function deleteSupabaseProduct(productId: string) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from('products')
     .update({ is_active: false })
     .eq('id', productId)
     .select()
 
   if (error) {
-    console.warn('Supabase product delete warning:', error.message)
+    console.warn('Supabase product delete error:', error.message)
     throw error
   }
   return data?.[0]
