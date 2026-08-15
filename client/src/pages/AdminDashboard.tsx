@@ -620,7 +620,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-800/80 text-stone-200">
-                  {products.map(p => (
+                  {safeProducts.map(p => (
                     <tr key={p._id} className="hover:bg-stone-800/50 transition-colors">
                       <td className="p-4">
                         <img
@@ -687,12 +687,12 @@ export default function AdminDashboard() {
       {/* TAB 3: ORDER MANAGEMENT */}
       {activeTab === 'ORDERS' && (
         <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 shadow-2xl space-y-4">
-          <h3 className="text-lg font-black text-amber-400">Placed Customer Orders</h3>
-          {orders.length === 0 ? (
+          <h3 className="text-lg font-black text-amber-400">Placed Customer Orders ({safeOrders.length})</h3>
+          {safeOrders.length === 0 ? (
             <div className="text-center py-12 text-stone-500 text-xs font-bold">No customer orders placed yet.</div>
           ) : (
             <div className="space-y-4">
-              {orders.map(o => (
+              {safeOrders.map(o => (
                 <div key={o._id} className="bg-stone-950 border border-stone-800 rounded-2xl p-5 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800 pb-3">
                     <div>
@@ -715,8 +715,25 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="text-xs text-stone-300 font-medium">
-                    📍 Delivery: <strong>{o.address?.street || o.address?.area}, {o.address?.city || 'Chennai'}</strong>
+                    📍 Delivery Address: <strong>{o.address?.street || o.address?.area}, {o.address?.city || 'Chennai'}</strong>
                   </div>
+
+                  {/* Ordered Items Breakdown */}
+                  {Array.isArray(o.items) && o.items.length > 0 && (
+                    <div className="bg-stone-900/80 p-3 rounded-xl border border-stone-800/80 space-y-1.5">
+                      <div className="text-[11px] font-black uppercase text-amber-400 tracking-wider">Ordered Items ({o.items.length}):</div>
+                      {o.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between text-xs text-stone-200">
+                          <span>
+                            • <strong className="text-white">{item.name || 'Seafood Item'}</strong>{' '}
+                            <span className="text-stone-400">({item.weightLabel || item.weight || '300g'} | {item.cutting || 'Standard Cut'})</span>{' '}
+                            <span className="text-amber-400 font-bold">x{item.quantity || 1}</span>
+                          </span>
+                          <span className="font-bold text-emerald-400">₹{(item.price || 0) * (item.quantity || 1)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
