@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useLocation } from '../context/LocationContext'
 import api from '../services/api'
+import { createSupabaseOrder } from '../services/supabaseClient'
 
 export default function Checkout() {
   const { items, subtotal, deliveryFee, tax, appliedDiscount, total, clearCart } = useCart()
@@ -87,18 +88,35 @@ export default function Checkout() {
         total
       }
 
-      // Try sending order to backend API, or generate mock order if guest
+      // 1. Try Supabase direct insert first (works on Vercel without Express)
       let createdOrder: any = null
       try {
-        const res = await api.post('/orders', orderPayload)
-        createdOrder = res.data.order || res.data
-      } catch (err) {
-        // Fallback for guest mode
-        createdOrder = {
-          _id: 'ORD' + Date.now().toString().slice(-8),
-          orderNumber: 'FM' + Math.floor(10000000 + Math.random() * 90000000),
-          createdAt: new Date().toISOString(),
-          ...orderPayload
+        const supaOrder = await createSupabaseOrder(orderPayload)
+        if (supaOrder) {
+          createdOrder = {
+            _id: supaOrder.id,
+            orderNumber: supaOrder.order_number || ('FM' + Date.now().toString().slice(-8)),
+            createdAt: supaOrder.created_at || new Date().toISOString(),
+            ...orderPayload
+          }
+        }
+      } catch (supaErr) {
+        console.warn('Supabase order insert failed, trying API fallback:', supaErr)
+      }
+
+      // 2. Fallback to Express backend API
+      if (!createdOrder) {
+        try {
+          const res = await api.post('/orders', orderPayload)
+          createdOrder = res.data.order || res.data
+        } catch (apiErr) {
+          // 3. Offline fallback — generate local order ID so user can proceed
+          createdOrder = {
+            _id: 'ORD' + Date.now().toString().slice(-8),
+            orderNumber: 'FM' + Math.floor(10000000 + Math.random() * 90000000),
+            createdAt: new Date().toISOString(),
+            ...orderPayload
+          }
         }
       }
 

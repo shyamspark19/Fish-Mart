@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
-import { fetchSupabaseProducts, fetchSupabaseOrders } from '../services/supabaseClient'
+import { supabase, fetchSupabaseProducts, fetchSupabaseOrders } from '../services/supabaseClient'
 import { useLocation } from '../context/LocationContext'
 import {
   updateProductStock,
@@ -67,8 +67,65 @@ export default function AdminDashboard() {
     cuts: 'Steak Cut, Curry Cut, Boneless Cubes'
   })
 
+  // New order notification state
+  const [newOrderBanner, setNewOrderBanner] = useState<string | null>(null)
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     fetchData()
+
+    // ── Supabase Real-Time Subscription ──
+    // Fires instantly whenever a customer places an order
+    const channel = supabase
+      .channel('admin-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          const newRow = payload.new as any
+          const mappedOrder: Order = {
+            _id: newRow.id,
+            orderNumber: newRow.order_number || ('FM' + String(newRow.id).slice(0, 8).toUpperCase()),
+            address: {
+              name: newRow.recipient_name,
+              phone: newRow.phone,
+              street: newRow.address,
+              area: '',
+              city: ''
+            },
+            items: newRow.items || [],
+            total: newRow.total,
+            paymentMethod: newRow.payment_method,
+            orderStatus: newRow.status || 'PLACED',
+            createdAt: newRow.created_at
+          }
+          // Prepend new order to top of list
+          setOrders(prev => [mappedOrder, ...(Array.isArray(prev) ? prev : [])])
+          // Show banner notification
+          const customerName = newRow.recipient_name || 'Customer'
+          setNewOrderBanner(`🆕 New order from ${customerName} — ₹${newRow.total}`)
+          if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+          bannerTimerRef.current = setTimeout(() => setNewOrderBanner(null), 6000)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        (payload) => {
+          const updated = payload.new as any
+          setOrders(prev =>
+            (Array.isArray(prev) ? prev : []).map(o =>
+              o._id === updated.id ? { ...o, orderStatus: updated.status } : o
+            )
+          )
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current)
+    }
   }, [])
 
   const fetchData = async () => {
@@ -363,7 +420,26 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* REAL-TIME FINANCES & ORDER KPI CARDS */}
+      {/* Real-Time New Order Notification Banner */}
+      {newOrderBanner && (
+        <div className="flex items-center justify-between p-4 bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 rounded-2xl text-xs font-black shadow-xl shadow-emerald-900/30 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="text-xl animate-bounce">🔔</span>
+            <div>
+              <div className="text-emerald-300 font-black">{newOrderBanner}</div>
+              <div className="text-emerald-600 text-[10px] font-semibold mt-0.5">Click "Customer Orders" tab to view</div>
+            </div>
+          </div>
+          <button
+            onClick={() => { setActiveTab('ORDERS'); setNewOrderBanner(null) }}
+            className="px-4 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 rounded-xl font-black text-[10px] uppercase tracking-wider transition-colors"
+          >
+            View Order →
+          </button>
+        </div>
+      )}
+
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Real-Time Gross Sales */}
         <div className="bg-stone-900 border border-stone-800 rounded-3xl p-5 shadow-xl space-y-2">
