@@ -123,9 +123,12 @@ export default function AdminDashboard() {
   }
 
   // 100% REAL-TIME CALCULATIONS FROM LIVE DATABASE STATE
-  const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0)
-  const totalOrdersCount = orders.length
-  const totalStockCount = products.reduce((acc, p) => acc + (Number(p.stock) || 0), 0)
+  const safeProducts = Array.isArray(products) ? products : []
+  const safeOrders = Array.isArray(orders) ? orders : []
+
+  const totalRevenue = safeOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0)
+  const totalOrdersCount = safeOrders.length
+  const totalStockCount = safeProducts.reduce((acc, p) => acc + (Number(p.stock) || 0), 0)
   const averageOrderValue = totalOrdersCount > 0 ? Math.round(totalRevenue / totalOrdersCount) : 0
 
   // Real-time Profit & Loss allocations
@@ -136,8 +139,8 @@ export default function AdminDashboard() {
   const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0'
 
   // Real-time category distribution calculated from live products inventory
-  const totalProductItems = products.length || 1
-  const categoryCounts = products.reduce((acc: any, p) => {
+  const totalProductItems = safeProducts.length || 1
+  const categoryCounts = safeProducts.reduce((acc: any, p) => {
     acc[p.category] = (acc[p.category] || 0) + 1
     return acc
   }, {})
@@ -169,10 +172,10 @@ export default function AdminDashboard() {
   })
 
   // Real-time order status counts from live orders database
-  const deliveredCount = orders.filter(o => o.orderStatus === 'DELIVERED').length
-  const outForDeliveryCount = orders.filter(o => o.orderStatus === 'OUT_FOR_DELIVERY').length
-  const preparingCount = orders.filter(o => ['PLACED', 'CONFIRMED', 'PREPARING', 'PACKED'].includes(o.orderStatus || '')).length
-  const cancelledCount = orders.filter(o => o.orderStatus === 'CANCELLED').length
+  const deliveredCount = safeOrders.filter(o => o.orderStatus === 'DELIVERED').length
+  const outForDeliveryCount = safeOrders.filter(o => o.orderStatus === 'OUT_FOR_DELIVERY').length
+  const preparingCount = safeOrders.filter(o => ['PLACED', 'CONFIRMED', 'PREPARING', 'PACKED'].includes(o.orderStatus || '')).length
+  const cancelledCount = safeOrders.filter(o => o.orderStatus === 'CANCELLED').length
 
   const statusData = [
     { name: 'Delivered', color: '#10B981', count: deliveredCount },
@@ -565,7 +568,7 @@ export default function AdminDashboard() {
         <div className="bg-stone-900 border border-stone-800 rounded-3xl overflow-hidden shadow-2xl">
           <div className="p-5 border-b border-stone-800 flex items-center justify-between bg-stone-950/60">
             <h3 className="text-base font-black text-amber-400">Live Product & Stock Catalog (Read / Write)</h3>
-            <span className="text-xs text-stone-400 font-semibold">Total Stock Items: {products.reduce((acc, p) => acc + p.stock, 0)} Pcs</span>
+            <span className="text-xs text-stone-400 font-semibold">Total Stock Items: {safeProducts.reduce((acc, p) => acc + (p.stock || 0), 0)} Pcs</span>
           </div>
 
           {loading ? (

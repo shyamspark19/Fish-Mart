@@ -426,9 +426,9 @@ const FALLBACK_PRODUCTS: Product[] = [
               const activeWeightObj = product.weights?.[weightIdx] || product.weights?.[0]
               const imageSrc = product.images?.[0] || 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'
 
-              const cartCountForProduct = items
-                .filter(i => i.productId === product._id)
-                .reduce((acc, i) => acc + i.quantity, 0)
+              const cartCountForProduct = (Array.isArray(items) ? items : [])
+                .filter(i => i && i.productId === product._id)
+                .reduce((acc, i) => acc + (i.quantity || 1), 0)
 
               return (
                 <div

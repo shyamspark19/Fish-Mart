@@ -39,7 +39,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [items, setItems] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('ocean_cart_items')
     if (saved) {
-      try { return JSON.parse(saved) } catch (e) { return [] }
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) return parsed
+      } catch (e) {
+        return []
+      }
     }
     return []
   })
@@ -49,15 +54,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [appliedDiscount, setAppliedDiscount] = useState(0)
 
   useEffect(() => {
-    localStorage.setItem('ocean_cart_items', JSON.stringify(items))
+    localStorage.setItem('ocean_cart_items', JSON.stringify(Array.isArray(items) ? items : []))
   }, [items])
 
   const addToCart = (product: any, weightLabel: string, cutting: string, price: number) => {
     const itemId = `${product._id}_${weightLabel}_${cutting}`
     setItems(prev => {
-      const existing = prev.find(item => item.id === itemId)
+      const safePrev = Array.isArray(prev) ? prev : []
+      const existing = safePrev.find(item => item.id === itemId)
       if (existing) {
-        return prev.map(item =>
+        return safePrev.map(item =>
           item.id === itemId ? { ...item, quantity: item.quantity + 1 } : item
         )
       } else {
@@ -74,7 +80,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           netWeight: product.netWeight,
           grossWeight: product.grossWeight
         }
-        return [...prev, newItem]
+        return [...safePrev, newItem]
       }
     })
     setIsCartDrawerOpen(true)
@@ -82,7 +88,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateQuantity = (id: string, delta: number) => {
     setItems(prev =>
-      prev
+      (Array.isArray(prev) ? prev : [])
         .map(item => {
           if (item.id === id) {
             const newQty = item.quantity + delta
@@ -95,7 +101,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const removeFromCart = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id))
+    setItems(prev => (Array.isArray(prev) ? prev : []).filter(item => item.id !== id))
   }
 
   const clearCart = () => {
@@ -123,12 +129,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAppliedDiscount(0)
   }
 
-  const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0)
+  const safeItems = Array.isArray(items) ? items : []
+  const subtotal = safeItems.reduce((acc, i) => acc + (i.price || 0) * (i.quantity || 1), 0)
   const deliveryFee = subtotal === 0 ? 0 : subtotal >= 499 ? 0 : 40
   const tax = Math.round(subtotal * 0.05)
   const rawTotal = subtotal + deliveryFee + tax - appliedDiscount
   const total = Math.max(0, rawTotal)
-  const totalItemsCount = items.reduce((acc, i) => acc + i.quantity, 0)
+  const totalItemsCount = safeItems.reduce((acc, i) => acc + (i.quantity || 1), 0)
 
   return (
     <CartContext.Provider
