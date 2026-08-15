@@ -77,60 +77,61 @@ export default function AdminDashboard() {
       let prods: any[] = []
       let ords: any[] = []
 
-      try {
-        const [prodRes, ordRes] = await Promise.all([
-          api.get('/products'),
-          api.get('/orders').catch(() => ({ data: [] }))
-        ])
-        prods = prodRes.data || []
-        ords = ordRes.data || []
-      } catch (e) {
-        console.warn('Backend API fetch warning in AdminDashboard, trying Supabase fallback...')
+      // 1. Fetch live products and orders from Supabase database
+      const [supaProds, supaOrds] = await Promise.all([
+        fetchSupabaseProducts(),
+        fetchSupabaseOrders()
+      ])
+
+      if (supaProds && supaProds.length > 0) {
+        prods = supaProds.map((p: any) => ({
+          _id: p.id || p._id,
+          name: p.name,
+          description: p.description,
+          category: p.category,
+          images: p.images || [],
+          weights: p.weights || [],
+          cuttingOptions: p.cuttingOptions || p.cutting_options || [],
+          stock: p.stock ?? 50,
+          badge: p.badge,
+          netWeight: p.netWeight || p.net_weight,
+          grossWeight: p.grossWeight || p.gross_weight,
+          pieces: p.pieces,
+          deliveryTime: p.deliveryTime || p.delivery_time,
+          rating: p.rating,
+          reviewsCount: p.reviewsCount || p.reviews_count
+        }))
       }
 
-      if (prods.length === 0) {
-        const supaProds = await fetchSupabaseProducts()
-        if (supaProds && supaProds.length > 0) {
-          prods = supaProds.map((p: any) => ({
-            _id: p.id || p._id,
-            name: p.name,
-            description: p.description,
-            category: p.category,
-            images: p.images || [],
-            weights: p.weights || [],
-            cuttingOptions: p.cuttingOptions || p.cutting_options || [],
-            stock: p.stock || 50,
-            badge: p.badge,
-            netWeight: p.netWeight || p.net_weight,
-            grossWeight: p.grossWeight || p.gross_weight,
-            pieces: p.pieces,
-            deliveryTime: p.deliveryTime || p.delivery_time,
-            rating: p.rating,
-            reviewsCount: p.reviewsCount || p.reviews_count
-          }))
-        }
+      if (supaOrds && supaOrds.length > 0) {
+        ords = supaOrds.map((o: any) => ({
+          _id: o.id,
+          orderNumber: o.order_number || ('FM' + String(o.id).slice(0, 8)),
+          address: {
+            name: o.recipient_name,
+            phone: o.phone,
+            street: o.address,
+            area: '',
+            city: ''
+          },
+          items: o.items || [],
+          total: o.total,
+          paymentMethod: o.payment_method,
+          orderStatus: o.status || 'PLACED',
+          createdAt: o.created_at
+        }))
       }
 
-      if (ords.length === 0) {
-        const supaOrds = await fetchSupabaseOrders()
-        if (supaOrds && supaOrds.length > 0) {
-          ords = supaOrds.map((o: any) => ({
-            _id: o.id,
-            orderNumber: o.order_number || ('FM' + String(o.id).slice(0, 8)),
-            address: {
-              name: o.recipient_name,
-              phone: o.phone,
-              street: o.address,
-              area: '',
-              city: ''
-            },
-            items: o.items || [],
-            total: o.total,
-            paymentMethod: o.payment_method,
-            orderStatus: o.status || 'PLACED',
-            createdAt: o.created_at
-          }))
-        }
+      // 2. Fallback to Express backend API if Supabase is empty
+      if (prods.length === 0 || ords.length === 0) {
+        try {
+          const [prodRes, ordRes] = await Promise.all([
+            api.get('/products').catch(() => ({ data: [] })),
+            api.get('/orders').catch(() => ({ data: [] }))
+          ])
+          if (prods.length === 0) prods = prodRes.data || []
+          if (ords.length === 0) ords = ordRes.data || []
+        } catch (e) {}
       }
 
       setProducts(prods || [])
@@ -399,41 +400,37 @@ export default function AdminDashboard() {
       <div className="flex items-center gap-3 border-b border-stone-800 pb-3">
         <button
           onClick={() => setActiveTab('ANALYTICS')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-            activeTab === 'ANALYTICS'
-              ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
-              : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
-          }`}
+          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'ANALYTICS'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
+            : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+            }`}
         >
-          📊 Real-Time Charts & P&L
+          📊 Overall Status (Profit & Loss Analytics)
         </button>
         <button
           onClick={() => setActiveTab('PRODUCTS')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-            activeTab === 'PRODUCTS'
-              ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
-              : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
-          }`}
+          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'PRODUCTS'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
+            : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+            }`}
         >
           📦 Product Catalog ({safeProducts.length})
         </button>
         <button
           onClick={() => setActiveTab('ORDERS')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-            activeTab === 'ORDERS'
-              ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
-              : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
-          }`}
+          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'ORDERS'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
+            : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+            }`}
         >
           📋 Customer Orders ({safeOrders.length})
         </button>
         <button
           onClick={() => setActiveTab('MAPS')}
-          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
-            activeTab === 'MAPS'
-              ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
-              : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
-          }`}
+          className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'MAPS'
+            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-stone-950 shadow-lg shadow-orange-500/20 font-black'
+            : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
+            }`}
         >
           🗺️ Google Maps Hub Detector
         </button>
@@ -451,7 +448,7 @@ export default function AdminDashboard() {
                   <p className="text-xs text-stone-400">Real-time catalog distribution across categories</p>
                 </div>
                 <span className="text-xs font-bold text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">
-                  {products.length} Catalog Items
+                  {safeProducts.length} Catalog Items
                 </span>
               </div>
 
