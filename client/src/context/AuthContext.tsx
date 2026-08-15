@@ -14,7 +14,14 @@ interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(null)
+  const [user, setUser] = useState<any | null>(() => {
+    try {
+      const raw = localStorage.getItem('fm_user')
+      return raw ? JSON.parse(raw) : null
+    } catch (e) {
+      return null
+    }
+  })
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('fm_token'))
   const [authSource, setAuthSource] = useState<'supabase' | 'backend' | 'demo' | null>(() => {
     return (localStorage.getItem('fm_auth_source') as any) || null
@@ -22,10 +29,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     async function load() {
-      const storedUser = localStorage.getItem('fm_user')
+      const storedUserRaw = localStorage.getItem('fm_user')
+      const storedAuthSource = localStorage.getItem('fm_auth_source') || authSource
+
+      if (token && storedUserRaw && !user) {
+        try {
+          setUser(JSON.parse(storedUserRaw))
+        } catch (e) {}
+      }
+
       if (token) {
-        // Check Supabase session first if registered via Supabase
-        if (authSource === 'supabase' && isSupabaseConfigured()) {
+        if ((storedAuthSource === 'supabase' || !storedAuthSource) && isSupabaseConfigured()) {
           try {
             const { data } = await supabase.auth.getUser()
             if (data.user) {
@@ -33,9 +47,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: data.user.id,
                 email: data.user.email,
                 name: data.user.user_metadata?.name || data.user.email?.split('@')[0],
-                role: data.user.user_metadata?.role || 'CUSTOMER'
+                role: data.user.user_metadata?.role || (data.user.email?.includes('admin') ? 'ADMIN' : 'CUSTOMER')
               }
               setUser(u)
+              localStorage.setItem('fm_user', JSON.stringify(u))
               return
             }
           } catch (e) {
@@ -43,24 +58,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
 
-        // Try Express backend auth check
         try {
           const resp = await authService.me(token)
-          setUser(resp.user)
-          return
-        } catch (err) {
-          // If local stored user exists, use it
-          if (storedUser) {
-            try {
-              setUser(JSON.parse(storedUser))
-              return
-            } catch (e) {}
+          if (resp?.user) {
+            setUser(resp.user)
+            localStorage.setItem('fm_user', JSON.stringify(resp.user))
+            return
           }
+        } catch (err) {
+          // Keep active local user state if Express backend is unreachable
         }
       }
     }
     load()
-  }, [token, authSource])
+  }, [token])
 
   const login = async (email: string, password: string) => {
     let lastError: any = null

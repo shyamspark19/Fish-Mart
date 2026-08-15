@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import api from '../services/api'
+import { fetchSupabaseProducts } from '../services/supabaseClient'
 import { useLocation } from '../context/LocationContext'
 import {
   updateProductStock,
@@ -73,12 +74,46 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [prodRes, ordRes] = await Promise.all([
-        api.get('/products'),
-        api.get('/orders').catch(() => ({ data: [] }))
-      ])
-      setProducts(prodRes.data || [])
-      setOrders(ordRes.data || [])
+      let prods: any[] = []
+      let ords: any[] = []
+
+      try {
+        const [prodRes, ordRes] = await Promise.all([
+          api.get('/products'),
+          api.get('/orders').catch(() => ({ data: [] }))
+        ])
+        prods = prodRes.data || []
+        ords = ordRes.data || []
+      } catch (e) {
+        console.warn('Backend API fetch warning in AdminDashboard, trying Supabase fallback...')
+      }
+
+      if (prods.length === 0) {
+        const supaProds = await fetchSupabaseProducts()
+        if (supaProds && supaProds.length > 0) {
+          prods = supaProds.map((p: any) => ({
+            _id: p.id || p._id,
+            name: p.name,
+            description: p.description,
+            category: p.category,
+            images: p.images || [],
+            weights: p.weights || [],
+            cuttingOptions: p.cuttingOptions || p.cutting_options || [],
+            stock: p.stock || 50,
+            badge: p.badge,
+            netWeight: p.netWeight || p.net_weight,
+            grossWeight: p.grossWeight || p.gross_weight,
+            pieces: p.pieces,
+            deliveryTime: p.deliveryTime || p.delivery_time,
+            rating: p.rating,
+            reviewsCount: p.reviewsCount || p.reviews_count
+          }))
+        }
+      }
+
+      setProducts(prods || [])
+      setOrders(ords || [])
+      setError('')
     } catch (err: any) {
       console.error(err)
       setError('Failed to fetch admin dashboard data.')
