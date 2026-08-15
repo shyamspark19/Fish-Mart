@@ -415,7 +415,7 @@ export default function AdminDashboard() {
               : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
           }`}
         >
-          📦 Product Catalog ({products.length})
+          📦 Product Catalog ({safeProducts.length})
         </button>
         <button
           onClick={() => setActiveTab('ORDERS')}
@@ -425,7 +425,7 @@ export default function AdminDashboard() {
               : 'bg-stone-900 text-stone-400 hover:text-white border border-stone-800'
           }`}
         >
-          📋 Customer Orders ({orders.length})
+          📋 Customer Orders ({safeOrders.length})
         </button>
         <button
           onClick={() => setActiveTab('MAPS')}
