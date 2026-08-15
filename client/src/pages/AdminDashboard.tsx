@@ -270,8 +270,26 @@ export default function AdminDashboard() {
         await editAdminProduct(editingId, payload)
         setSuccessMsg(`✓ Product "${formData.name}" updated successfully!`)
       } else {
-        await createAdminProduct(payload)
+        const newProduct = await createAdminProduct(payload)
         setSuccessMsg(`✓ Product "${formData.name}" created successfully!`)
+        if (newProduct) {
+          const mappedNewProd: Product = {
+            _id: newProduct.id || newProduct._id || `prod_${Date.now()}`,
+            name: newProduct.name || formData.name,
+            description: newProduct.description || formData.description,
+            category: newProduct.category || formData.category,
+            images: newProduct.images || [formData.imageUrl],
+            weights: newProduct.weights || [{ label: formData.weightLabel, price: Number(formData.price) }],
+            cuttingOptions: newProduct.cutting_options || payload.cuttingOptions,
+            stock: newProduct.stock ?? Number(formData.stock),
+            badge: newProduct.badge || formData.badge,
+            netWeight: newProduct.net_weight || formData.netWeight,
+            grossWeight: newProduct.gross_weight || formData.grossWeight,
+            pieces: newProduct.pieces || formData.pieces,
+            deliveryTime: newProduct.delivery_time || 'Today in 90 mins'
+          }
+          setProducts(prev => [mappedNewProd, ...(Array.isArray(prev) ? prev : [])])
+        }
       }
       setIsModalOpen(false)
       fetchData()

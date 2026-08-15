@@ -152,29 +152,29 @@ export async function updateSupabaseOrderStatus(orderId: string, status: string)
  * Supabase Database Helper: Create Product
  */
 export async function createSupabaseProduct(payload: any) {
+  const insertPayload = {
+    name: payload.name,
+    description: payload.description,
+    category: payload.category,
+    images: payload.images || [],
+    weights: payload.weights || [],
+    cutting_options: payload.cuttingOptions || [],
+    stock: Number(payload.stock) || 50,
+    badge: payload.badge,
+    net_weight: payload.netWeight,
+    gross_weight: payload.grossWeight,
+    pieces: payload.pieces,
+    delivery_time: payload.deliveryTime || 'Today in 90 mins',
+    is_active: true
+  }
+
   const { data, error } = await supabaseAdmin
     .from('products')
-    .insert([
-      {
-        name: payload.name,
-        description: payload.description,
-        category: payload.category,
-        images: payload.images || [],
-        weights: payload.weights || [],
-        cutting_options: payload.cuttingOptions || [],
-        stock: payload.stock || 50,
-        badge: payload.badge,
-        net_weight: payload.netWeight,
-        gross_weight: payload.grossWeight,
-        pieces: payload.pieces,
-        delivery_time: payload.deliveryTime || 'Today in 90 mins',
-        is_active: true
-      }
-    ])
+    .insert([insertPayload])
     .select()
 
   if (error) {
-    console.warn('Supabase product creation warning:', error.message)
+    console.error('Supabase product creation error:', error.message)
     throw error
   }
   return data?.[0]
