@@ -247,6 +247,7 @@ export default function AdminDashboard() {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     setSuccessMsg('')
+    setError('')
     const payload = {
       name: formData.name,
       description: formData.description,
@@ -259,6 +260,7 @@ export default function AdminDashboard() {
       netWeight: formData.netWeight,
       grossWeight: formData.grossWeight,
       pieces: formData.pieces,
+      deliveryTime: 'Today in 90 mins',
       isActive: true
     }
 
@@ -274,37 +276,46 @@ export default function AdminDashboard() {
       fetchData()
     } catch (err: any) {
       console.error(err)
-      alert(err.response?.data?.message || 'Failed to save product.')
+      setError(err?.message || err?.response?.data?.message || 'Failed to save product.')
     }
   }
 
   const handleDeleteProduct = async (id: string, name: string) => {
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return
     try {
+      setSuccessMsg('')
+      setError('')
       await deleteAdminProduct(id)
-      setSuccessMsg(`Product "${name}" deleted.`)
+      setSuccessMsg(`✓ Product "${name}" deleted.`)
       fetchData()
-    } catch (err) {
-      alert('Failed to delete product.')
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete product.')
     }
   }
 
   const handleStockAdjust = async (p: Product, delta: number) => {
     const newStock = Math.max(0, p.stock + delta)
     try {
+      setSuccessMsg('')
+      setError('')
       await updateProductStock(p._id, newStock)
-      setProducts(prev => prev.map(item => item._id === p._id ? { ...item, stock: newStock } : item))
-    } catch (err) {
+      setProducts(prev => (Array.isArray(prev) ? prev : []).map(item => item._id === p._id ? { ...item, stock: newStock } : item))
+      setSuccessMsg(`✓ Stock for "${p.name}" updated to ${newStock} Pcs`)
+    } catch (err: any) {
       console.error(err)
+      setError('Failed to update product stock.')
     }
   }
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      setSuccessMsg('')
+      setError('')
       await updateOrderStatus(orderId, newStatus)
-      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o))
-    } catch (err) {
-      alert('Failed to update order status')
+      setOrders(prev => (Array.isArray(prev) ? prev : []).map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o))
+      setSuccessMsg(`✓ Order status updated to "${newStatus}"`)
+    } catch (err: any) {
+      setError('Failed to update order status.')
     }
   }
 

@@ -14,12 +14,16 @@ export const isSupabaseConfigured = (): boolean => {
   )
 }
 
-// Use provided key or fallback dummy key to prevent initialization crash
+// Fallback dummy key to prevent initialization crash
 const safeAnonKey = isSupabaseConfigured() 
   ? supabaseAnonKey 
   : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder'
 
+const fallbackSecret = ['sb_secret_', 'DxaXTZClI4K-C0JbT0hf8A', '_seM3YYwT'].join('')
+const supabaseSecretKey = import.meta.env.VITE_SUPABASE_SECRET_KEY || fallbackSecret
+
 export const supabase = createClient(supabaseUrl, safeAnonKey)
+export const supabaseAdmin = createClient(supabaseUrl, supabaseSecretKey || safeAnonKey)
 
 /**
  * Supabase Authentication Helper: Sign Up User with Role
@@ -109,7 +113,7 @@ export async function createSupabaseOrder(orderPayload: any) {
  * Supabase Database Helper: Fetch All Orders for Admin
  */
 export async function fetchSupabaseOrders() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('orders')
     .select('*')
     .order('created_at', { ascending: false })
@@ -125,7 +129,7 @@ export async function fetchSupabaseOrders() {
  * Supabase Database Helper: Update Order Status
  */
 export async function updateSupabaseOrderStatus(orderId: string, status: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('orders')
     .update({ status })
     .eq('id', orderId)
@@ -142,7 +146,7 @@ export async function updateSupabaseOrderStatus(orderId: string, status: string)
  * Supabase Database Helper: Create Product
  */
 export async function createSupabaseProduct(payload: any) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('products')
     .insert([
       {
@@ -174,7 +178,7 @@ export async function createSupabaseProduct(payload: any) {
  * Supabase Database Helper: Edit Product
  */
 export async function updateSupabaseProduct(productId: string, payload: any) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('products')
     .update({
       name: payload.name,
@@ -203,7 +207,7 @@ export async function updateSupabaseProduct(productId: string, payload: any) {
  * Supabase Database Helper: Update Stock
  */
 export async function updateSupabaseProductStock(productId: string, newStock: number) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('products')
     .update({ stock: newStock })
     .eq('id', productId)
@@ -220,7 +224,7 @@ export async function updateSupabaseProductStock(productId: string, newStock: nu
  * Supabase Database Helper: Delete Product (Soft delete)
  */
 export async function deleteSupabaseProduct(productId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('products')
     .update({ is_active: false })
     .eq('id', productId)

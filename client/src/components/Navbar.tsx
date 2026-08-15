@@ -90,8 +90,8 @@ export default function Navbar() {
             Catalog
           </Link>
 
-          {/* Cart Icon & Count Badge (ONLY SHOW AFTER LOGIN) */}
-          {isLoggedIn && (
+          {/* Cart Icon & Count Badge (ONLY SHOW FOR CUSTOMERS AFTER LOGIN) */}
+          {isLoggedIn && !isAdmin && (
             <button
               onClick={() => setIsCartDrawerOpen(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-cyan-500/25 transition-transform active:scale-95 text-white"

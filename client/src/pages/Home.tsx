@@ -246,10 +246,18 @@ const FALLBACK_PRODUCTS: Product[] = [
     setSelectedCuts(prev => ({ ...prev, [productId]: cutOption }))
   }
 
+  const isAdmin = auth?.user?.role === 'ADMIN'
+
   const handleAdd = (product: Product) => {
     if (!isLoggedIn) {
       alert('Please Sign In to add items to your cart.')
       navigate('/login')
+      return
+    }
+
+    if (isAdmin) {
+      alert('You are currently logged in as Admin. Redirecting to Admin Hub...')
+      navigate('/admin')
       return
     }
 
