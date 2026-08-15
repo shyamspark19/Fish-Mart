@@ -102,24 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Attempt 2: Express Backend API
-    try {
-      const resp = await authService.login({ email, password })
-      if (resp.token) {
-        setToken(resp.token)
-        setUser(resp.user)
-        setAuthSource('backend')
-        localStorage.setItem('fm_token', resp.token)
-        localStorage.setItem('fm_user', JSON.stringify(resp.user))
-        localStorage.setItem('fm_auth_source', 'backend')
-        return
-      }
-    } catch (backendErr: any) {
-      console.warn('Backend API login attempt error:', backendErr?.response?.data?.message || backendErr?.message)
-      if (!lastError) lastError = backendErr
-    }
-
-    // Fallback: Local demo authentication for testing credentials
+    // Demo Fallback Check for default accounts
     if (
       (email === 'customer@fishmart.test' && password === 'Customer123!') ||
       (email === 'admin@fishmart.test' && password === 'Admin123!')
@@ -139,6 +122,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('fm_user', JSON.stringify(demoUser))
       localStorage.setItem('fm_auth_source', 'demo')
       return
+    }
+
+    // Attempt 2: Express Backend API
+    try {
+      const resp = await authService.login({ email, password })
+      if (resp.token) {
+        setToken(resp.token)
+        setUser(resp.user)
+        setAuthSource('backend')
+        localStorage.setItem('fm_token', resp.token)
+        localStorage.setItem('fm_user', JSON.stringify(resp.user))
+        localStorage.setItem('fm_auth_source', 'backend')
+        return
+      }
+    } catch (backendErr: any) {
+      console.warn('Backend API login attempt error:', backendErr?.response?.data?.message || backendErr?.message)
+      if (!lastError) lastError = backendErr
     }
 
     const msg = lastError?.message || lastError?.response?.data?.message || 'Authentication failed. Please check your credentials.'
