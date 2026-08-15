@@ -104,3 +104,131 @@ export async function createSupabaseOrder(orderPayload: any) {
   if (error) throw error
   return data?.[0]
 }
+
+/**
+ * Supabase Database Helper: Fetch All Orders for Admin
+ */
+export async function fetchSupabaseOrders() {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.warn('Supabase orders fetch warning:', error.message)
+    return []
+  }
+  return data || []
+}
+
+/**
+ * Supabase Database Helper: Update Order Status
+ */
+export async function updateSupabaseOrderStatus(orderId: string, status: string) {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId)
+    .select()
+
+  if (error) {
+    console.warn('Supabase order status update warning:', error.message)
+    throw error
+  }
+  return data?.[0]
+}
+
+/**
+ * Supabase Database Helper: Create Product
+ */
+export async function createSupabaseProduct(payload: any) {
+  const { data, error } = await supabase
+    .from('products')
+    .insert([
+      {
+        name: payload.name,
+        description: payload.description,
+        category: payload.category,
+        images: payload.images || [],
+        weights: payload.weights || [],
+        cutting_options: payload.cuttingOptions || [],
+        stock: payload.stock || 50,
+        badge: payload.badge,
+        net_weight: payload.netWeight,
+        gross_weight: payload.grossWeight,
+        pieces: payload.pieces,
+        delivery_time: payload.deliveryTime || 'Today in 90 mins',
+        is_active: true
+      }
+    ])
+    .select()
+
+  if (error) {
+    console.warn('Supabase product creation warning:', error.message)
+    throw error
+  }
+  return data?.[0]
+}
+
+/**
+ * Supabase Database Helper: Edit Product
+ */
+export async function updateSupabaseProduct(productId: string, payload: any) {
+  const { data, error } = await supabase
+    .from('products')
+    .update({
+      name: payload.name,
+      description: payload.description,
+      category: payload.category,
+      images: payload.images || [],
+      weights: payload.weights || [],
+      cutting_options: payload.cuttingOptions || [],
+      stock: payload.stock,
+      badge: payload.badge,
+      net_weight: payload.netWeight,
+      gross_weight: payload.grossWeight,
+      pieces: payload.pieces
+    })
+    .eq('id', productId)
+    .select()
+
+  if (error) {
+    console.warn('Supabase product update warning:', error.message)
+    throw error
+  }
+  return data?.[0]
+}
+
+/**
+ * Supabase Database Helper: Update Stock
+ */
+export async function updateSupabaseProductStock(productId: string, newStock: number) {
+  const { data, error } = await supabase
+    .from('products')
+    .update({ stock: newStock })
+    .eq('id', productId)
+    .select()
+
+  if (error) {
+    console.warn('Supabase stock update warning:', error.message)
+    throw error
+  }
+  return data?.[0]
+}
+
+/**
+ * Supabase Database Helper: Delete Product (Soft delete)
+ */
+export async function deleteSupabaseProduct(productId: string) {
+  const { data, error } = await supabase
+    .from('products')
+    .update({ is_active: false })
+    .eq('id', productId)
+    .select()
+
+  if (error) {
+    console.warn('Supabase product delete warning:', error.message)
+    throw error
+  }
+  return data?.[0]
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import api from '../services/api'
-import { fetchSupabaseProducts } from '../services/supabaseClient'
+import { fetchSupabaseProducts, fetchSupabaseOrders } from '../services/supabaseClient'
 import { useLocation } from '../context/LocationContext'
 import {
   updateProductStock,
@@ -107,6 +107,28 @@ export default function AdminDashboard() {
             deliveryTime: p.deliveryTime || p.delivery_time,
             rating: p.rating,
             reviewsCount: p.reviewsCount || p.reviews_count
+          }))
+        }
+      }
+
+      if (ords.length === 0) {
+        const supaOrds = await fetchSupabaseOrders()
+        if (supaOrds && supaOrds.length > 0) {
+          ords = supaOrds.map((o: any) => ({
+            _id: o.id,
+            orderNumber: o.order_number || ('FM' + String(o.id).slice(0, 8)),
+            address: {
+              name: o.recipient_name,
+              phone: o.phone,
+              street: o.address,
+              area: '',
+              city: ''
+            },
+            items: o.items || [],
+            total: o.total,
+            paymentMethod: o.payment_method,
+            orderStatus: o.status || 'PLACED',
+            createdAt: o.created_at
           }))
         }
       }
