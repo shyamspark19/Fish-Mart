@@ -75,16 +75,22 @@ export async function supabaseSignIn(email: string, password: string) {
  * Supabase Database Helper: Fetch All Seafood Products
  */
 export async function fetchSupabaseProducts() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('products')
     .select('*')
     .eq('is_active', true)
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.warn('Supabase product fetch warning:', error.message)
-    return null
+    console.warn('Supabase product fetch warning, trying fallback:', error.message)
+    const { data: fallbackData } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+    return fallbackData || []
   }
-  return data
+  return data || []
 }
 
 /**

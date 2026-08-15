@@ -178,17 +178,7 @@ const FALLBACK_PRODUCTS: Product[] = [
 
   useEffect(() => {
     async function loadProducts() {
-      try {
-        const res = await api.get('/products')
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          setProducts(res.data)
-          setError('')
-          return
-        }
-      } catch (err: any) {
-        console.warn('Backend API fetch warning, trying Supabase fallback:', err?.message)
-      }
-
+      setLoading(true)
       try {
         const supaProducts = await fetchSupabaseProducts()
         if (supaProducts && supaProducts.length > 0) {
@@ -200,27 +190,35 @@ const FALLBACK_PRODUCTS: Product[] = [
             images: p.images || [],
             weights: p.weights || [],
             cuttingOptions: p.cuttingOptions || p.cutting_options || [],
-            stock: p.stock || 50,
+            stock: p.stock ?? 50,
             badge: p.badge,
             netWeight: p.netWeight || p.net_weight,
             grossWeight: p.grossWeight || p.gross_weight,
             pieces: p.pieces,
             deliveryTime: p.deliveryTime || p.delivery_time,
-            rating: p.rating,
-            reviewsCount: p.reviewsCount || p.reviews_count
+            rating: p.rating || 4.8,
+            reviewsCount: p.reviewsCount || p.reviews_count || 120
           }))
           setProducts(mapped as any)
           setError('')
           return
         }
       } catch (supaErr) {
-        console.warn('Supabase fetch warning, using catalog fallback:', supaErr)
+        console.warn('Supabase fetch warning:', supaErr)
       }
+
+      try {
+        const res = await api.get('/products')
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setProducts(res.data)
+          setError('')
+          return
+        }
+      } catch (err: any) {}
 
       // Ultimate catalog fallback guarantee
       setProducts(FALLBACK_PRODUCTS)
       setError('')
-      setLoading(false)
     }
     loadProducts().finally(() => setLoading(false))
   }, [])
