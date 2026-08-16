@@ -65,6 +65,11 @@ export const TRANSLATIONS: Translations = {
   todayIn90Mins: { en: 'Today in 90 mins', ta: 'இன்று 90 நிமிடங்களில்', hi: 'आज 90 मिनट में' },
   viewModeMenu: { en: 'Menu Card View', ta: 'மெனு கார்டு பார்வை', hi: 'मेनू कार्ड दृश्य' },
   viewModeGrid: { en: 'Grid View', ta: 'கிரிட் பார்வை', hi: 'ग्रिड दृश्य' },
+  outOfStock: { en: 'Out of Stock', ta: 'இருப்பு இல்லை', hi: 'स्टॉक में नहीं है' },
+  onlyAvailable: { en: 'Only', ta: 'மட்டுமே', hi: 'केवल' },
+  availableUnits: { en: 'available', ta: 'உள்ளது', hi: 'उपलब्ध है' },
+  limitedStocksOnly: { en: 'Limited stocks only', ta: 'குறைந்த இருப்பு மட்டுமே', hi: 'सीमित स्टॉक उपलब्ध' },
+  inStock: { en: 'In Stock', ta: 'இருப்பில் உள்ளது', hi: 'स्टॉक में उपलब्ध' },
 
   // Orders
   orderHistory: { en: 'Order History & Tracking', ta: 'ஆர்டர் வரலாறு & கண்காணிப்பு', hi: 'ऑर्डर इतिहास और ट्रैकिंग' },

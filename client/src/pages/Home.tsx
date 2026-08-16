@@ -60,7 +60,7 @@ const BANNERS = [
 export default function Home() {
   const navigate = useNavigate()
   const auth = useContext(AuthContext)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const isLoggedIn = Boolean(auth?.user)
 
   const [products, setProducts] = useState<Product[]>([])
@@ -123,7 +123,7 @@ export default function Home() {
       images: ['https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80'],
       weights: [{ label: '350g (Net Wt: 350g)', price: 599 }],
       cuttingOptions: ['Whole Cleaned', 'Fry Cut'],
-      stock: 30,
+      stock: 8, // Below 10 -> "Only '8' is available"
       badge: 'Top Rated',
       netWeight: '350g',
       grossWeight: '500g',
@@ -140,7 +140,7 @@ export default function Home() {
       images: ['https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=600&q=80'],
       weights: [{ label: '250g (Net Wt: 250g)', price: 379 }, { label: '500g (Net Wt: 500g)', price: 699 }],
       cuttingOptions: ['Cleaned & Deveined', 'Tail On'],
-      stock: 60,
+      stock: 18, // Below 25 -> "Limited stocks only"
       badge: 'Bestseller',
       netWeight: '250g',
       grossWeight: '400g',
@@ -157,7 +157,7 @@ export default function Home() {
       images: ['https://images.unsplash.com/photo-1559742811-822873691df8?auto=format&fit=crop&w=600&q=80'],
       weights: [{ label: '350g (Net Wt: 350g)', price: 549 }],
       cuttingOptions: ['Tail On Deveined', 'Butterfly Cut'],
-      stock: 25,
+      stock: 4, // Below 10 -> "Only '4' is available"
       badge: 'Premium',
       netWeight: '350g',
       grossWeight: '550g',
@@ -174,7 +174,7 @@ export default function Home() {
       images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=600&q=80'],
       weights: [{ label: '500g (Net Wt: 500g)', price: 289 }, { label: '1kg (Net Wt: 1000g)', price: 549 }],
       cuttingOptions: ['Curry Cut (with Head)', 'Curry Cut (No Head)', 'Steak Cut'],
-      stock: 50,
+      stock: 50, // In stock
       badge: 'Popular',
       netWeight: '500g',
       grossWeight: '750g',
@@ -191,7 +191,7 @@ export default function Home() {
       images: ['https://images.unsplash.com/photo-1548811265-5c1a1660d5b5?auto=format&fit=crop&w=600&q=80'],
       weights: [{ label: '500g (Net Wt: 500g)', price: 649 }],
       cuttingOptions: ['Cleaned & Halved', 'Whole Cleaned'],
-      stock: 20,
+      stock: 0, // Out of stock -> "Out of stock"
       badge: 'Exotic Catch',
       netWeight: '500g',
       grossWeight: '700g',
@@ -215,7 +215,7 @@ export default function Home() {
             images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'],
             weights: Array.isArray(p.weights) && p.weights.length > 0 ? p.weights : [{ label: '300g', price: 299 }],
             cuttingOptions: Array.isArray(p.cutting_options) && p.cutting_options.length > 0 ? p.cutting_options : ['Curry Cut', 'Steak Cut'],
-            stock: p.stock || 50,
+            stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : 50,
             badge: p.badge,
             netWeight: p.net_weight || '300g',
             grossWeight: p.gross_weight || '450g',
@@ -235,7 +235,11 @@ export default function Home() {
       try {
         const res = await api.get('/products')
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          setProducts(res.data)
+          const mapped = res.data.map((p: any) => ({
+            ...p,
+            stock: p.stock !== undefined && p.stock !== null ? Number(p.stock) : 50
+          }))
+          setProducts(mapped)
           setError('')
           return
         }
@@ -247,6 +251,69 @@ export default function Home() {
     }
     loadProducts().finally(() => setLoading(false))
   }, [])
+
+  /**
+   * Helper function to determine product stock status and labels based on exact database stock
+   * Rules:
+   * 1. stock == 0: "Out of stock"
+   * 2. stock < 10: "only '{stock}' is available"
+   * 3. stock < 25: "limited stocks only"
+   * 4. stock >= 25: "In Stock"
+   */
+  const getStockInfo = (stockVal: number = 0) => {
+    const stock = Number(stockVal) || 0
+    if (stock <= 0) {
+      return {
+        type: 'OUT_OF_STOCK',
+        text: t('outOfStock'),
+        badgeLabel: t('outOfStock'),
+        badgeClass: 'bg-rose-600 text-white font-black border border-rose-500 shadow-md',
+        pillClass: 'bg-rose-950/80 text-rose-300 border border-rose-500/40 font-bold',
+        dotColor: 'bg-rose-500',
+        isOut: true,
+        canAdd: false
+      }
+    }
+    if (stock < 10) {
+      const text = language === 'ta'
+        ? `${stock} மட்டுமே உள்ளது`
+        : language === 'hi'
+        ? `केवल '${stock}' उपलब्ध है`
+        : `only '${stock}' is available`
+      return {
+        type: 'BELOW_10',
+        text,
+        badgeLabel: text,
+        badgeClass: 'bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black border border-orange-500 shadow-md animate-pulse',
+        pillClass: 'bg-orange-950/80 text-orange-300 border border-orange-500/40 font-bold',
+        dotColor: 'bg-orange-400',
+        isOut: false,
+        canAdd: true
+      }
+    }
+    if (stock < 25) {
+      return {
+        type: 'BELOW_25',
+        text: t('limitedStocksOnly'),
+        badgeLabel: t('limitedStocksOnly'),
+        badgeClass: 'bg-gradient-to-r from-amber-600 to-yellow-600 text-white font-black border border-amber-500 shadow-md',
+        pillClass: 'bg-amber-950/80 text-amber-300 border border-amber-500/40 font-semibold',
+        dotColor: 'bg-amber-400',
+        isOut: false,
+        canAdd: true
+      }
+    }
+    return {
+      type: 'IN_STOCK',
+      text: t('inStock'),
+      badgeLabel: t('inStock'),
+      badgeClass: 'bg-emerald-600 text-white font-bold border border-emerald-500 shadow-md',
+      pillClass: 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-semibold',
+      dotColor: 'bg-emerald-400',
+      isOut: false,
+      canAdd: true
+    }
+  }
 
   // Filter & Sort Logic
   const filteredProducts = products
@@ -273,6 +340,11 @@ export default function Home() {
     if (!isLoggedIn) {
       alert('Please Sign In to add items to your cart.')
       navigate('/login')
+      return
+    }
+
+    if (product.stock <= 0) {
+      alert('Sorry, this product is currently out of stock.')
       return
     }
 
@@ -500,6 +572,7 @@ export default function Home() {
               const weightIdx = selectedWeights[product._id] || 0
               const activeWeightObj = product.weights?.[weightIdx] || product.weights?.[0]
               const imageSrc = product.images?.[0] || 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'
+              const stockInfo = getStockInfo(product.stock)
 
               const cartCountForProduct = (Array.isArray(items) ? items : [])
                 .filter(i => i && i.productId === product._id)
@@ -508,34 +581,54 @@ export default function Home() {
               return (
                 <div
                   key={product._id}
-                  className="bg-slate-900 border border-slate-800 hover:border-cyan-500/40 rounded-3xl p-4 sm:p-5 shadow-xl transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 group"
+                  className={`bg-slate-900 border rounded-3xl p-4 sm:p-5 shadow-xl transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 group ${
+                    stockInfo.isOut
+                      ? 'border-rose-900/40 opacity-90'
+                      : 'border-slate-800 hover:border-cyan-500/40'
+                  }`}
                 >
-                  {/* Left: Product Thumbnail & Badges */}
+                  {/* Left: Product Thumbnail & Stock Badges */}
                   <div className="relative w-full md:w-48 h-40 md:h-36 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-950">
                     <img
                       src={imageSrc}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                      className={`w-full h-full object-cover transition-transform duration-500 ${
+                        stockInfo.isOut
+                          ? 'grayscale-[40%] opacity-70'
+                          : 'opacity-90 group-hover:opacity-100 group-hover:scale-105'
+                      }`}
                     />
 
-                    {product.badge && (
+                    {/* Stock Status / Product Badge */}
+                    {stockInfo.type !== 'IN_STOCK' ? (
+                      <span className={`absolute top-2.5 left-2.5 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg ${stockInfo.badgeClass}`}>
+                        {stockInfo.badgeLabel}
+                      </span>
+                    ) : product.badge ? (
                       <span className="absolute top-2.5 left-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-md">
                         {product.badge}
                       </span>
-                    )}
+                    ) : null}
 
                     <span className="absolute bottom-2.5 left-2.5 bg-slate-950/90 text-cyan-300 border border-cyan-500/20 font-bold text-[9px] px-2 py-0.5 rounded-lg">
                       {product.deliveryTime || 'Today in 90 mins'}
                     </span>
                   </div>
 
-                  {/* Middle: Name, Category, Description, Weight & Cuts */}
+                  {/* Middle: Name, Category, Stock Pill, Description, Weight & Cuts */}
                   <div className="flex-1 space-y-2.5 w-full">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-md border border-cyan-500/20">
                           {product.category}
                         </span>
+
+                        {/* Explicit Product Stock Status Pill */}
+                        <span className={`text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 ${stockInfo.pillClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${stockInfo.dotColor}`} />
+                          <span>{stockInfo.text}</span>
+                        </span>
+
                         {product.pieces && (
                           <span className="text-[11px] font-semibold text-slate-300 bg-slate-800 px-2 py-0.5 rounded-md">
                             {product.pieces}
@@ -608,16 +701,25 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleAdd(product)}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-md ${
-                        cartCountForProduct > 0
-                          ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20'
-                          : 'bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 text-white shadow-cyan-500/20 active:scale-95'
-                      }`}
-                    >
-                      {cartCountForProduct > 0 ? `${t('added')} (${cartCountForProduct})` : t('addToCart')}
-                    </button>
+                    {stockInfo.isOut ? (
+                      <button
+                        disabled
+                        className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed shadow-none"
+                      >
+                        {t('outOfStock')}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleAdd(product)}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-md ${
+                          cartCountForProduct > 0
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20'
+                            : 'bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 text-white shadow-cyan-500/20 active:scale-95'
+                        }`}
+                      >
+                        {cartCountForProduct > 0 ? `${t('added')} (${cartCountForProduct})` : t('addToCart')}
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -632,6 +734,7 @@ export default function Home() {
               const weightIdx = selectedWeights[product._id] || 0
               const activeWeightObj = product.weights?.[weightIdx] || product.weights?.[0]
               const imageSrc = product.images?.[0] || 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'
+              const stockInfo = getStockInfo(product.stock)
 
               const cartCountForProduct = (Array.isArray(items) ? items : [])
                 .filter(i => i && i.productId === product._id)
@@ -640,21 +743,34 @@ export default function Home() {
               return (
                 <div
                   key={product._id}
-                  className="bg-slate-900 border border-slate-800 hover:border-cyan-500/40 rounded-3xl overflow-hidden shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between group"
+                  className={`bg-slate-900 border rounded-3xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between group ${
+                    stockInfo.isOut
+                      ? 'border-rose-900/40 opacity-90'
+                      : 'border-slate-800 hover:border-cyan-500/40 hover:shadow-cyan-500/10'
+                  }`}
                 >
                   {/* Image & Badges */}
                   <div className="relative aspect-[4/3] bg-slate-950 overflow-hidden">
                     <img
                       src={imageSrc}
                       alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                      className={`w-full h-full object-cover transition-transform duration-500 ${
+                        stockInfo.isOut
+                          ? 'grayscale-[40%] opacity-70'
+                          : 'opacity-90 group-hover:opacity-100 group-hover:scale-105'
+                      }`}
                     />
 
-                    {product.badge && (
+                    {/* Stock Status / Product Badge */}
+                    {stockInfo.type !== 'IN_STOCK' ? (
+                      <span className={`absolute top-3 left-3 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg ${stockInfo.badgeClass}`}>
+                        {stockInfo.badgeLabel}
+                      </span>
+                    ) : product.badge ? (
                       <span className="absolute top-3 left-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg shadow-lg">
                         {product.badge}
                       </span>
-                    )}
+                    ) : null}
 
                     <span className="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-md text-cyan-300 border border-cyan-500/20 font-bold text-[10px] px-2.5 py-1 rounded-lg">
                       {product.deliveryTime || 'Today in 90 mins'}
@@ -664,12 +780,20 @@ export default function Home() {
                   {/* Body Details */}
                   <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
-                      <div className="flex items-center justify-between text-xs mb-1">
+                      <div className="flex items-center justify-between text-xs mb-1.5">
                         <span className="font-extrabold text-cyan-400">{product.category}</span>
                         <div className="flex items-center gap-1 font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
                           <span>★ {product.rating || 4.8}</span>
                           <span className="text-slate-400 font-normal text-[10px]">({product.reviewsCount || 120})</span>
                         </div>
+                      </div>
+
+                      {/* Stock Status Pill */}
+                      <div className="mb-2">
+                        <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border inline-flex items-center gap-1.5 ${stockInfo.pillClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${stockInfo.dotColor}`} />
+                          <span>{stockInfo.text}</span>
+                        </span>
                       </div>
 
                       <h3 className="font-black text-white text-base leading-snug line-clamp-2 group-hover:text-cyan-300 transition-colors">
@@ -734,16 +858,25 @@ export default function Home() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleAdd(product)}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-md ${
-                          cartCountForProduct > 0
-                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20'
-                            : 'bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 text-white shadow-cyan-500/20 active:scale-95'
-                        }`}
-                      >
-                        {cartCountForProduct > 0 ? `${t('added')} (${cartCountForProduct})` : t('addToCart')}
-                      </button>
+                      {stockInfo.isOut ? (
+                        <button
+                          disabled
+                          className="px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed shadow-none"
+                        >
+                          {t('outOfStock')}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleAdd(product)}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-md ${
+                            cartCountForProduct > 0
+                              ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20'
+                              : 'bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 text-white shadow-cyan-500/20 active:scale-95'
+                          }`}
+                        >
+                          {cartCountForProduct > 0 ? `${t('added')} (${cartCountForProduct})` : t('addToCart')}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
