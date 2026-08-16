@@ -1,10 +1,12 @@
 import React, { useState, useContext } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { AuthContext } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import BrandLogo from '../components/BrandLogo'
 
 export default function Register() {
   const auth = useContext(AuthContext)!
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
@@ -32,7 +34,7 @@ export default function Register() {
       {/* Brand Logo & Header */}
       <div className="flex flex-col items-center justify-center text-center space-y-3">
         <BrandLogo size="lg" />
-        <p className="text-xs font-semibold text-slate-400">Create your Fish Mart customer account</p>
+        <p className="text-xs font-semibold text-slate-400">Create your {t('appName')} customer account</p>
       </div>
 
       {errorMsg && (
@@ -43,7 +45,7 @@ export default function Register() {
 
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-300">Full Name</label>
+          <label className="text-xs font-bold text-slate-300">{t('fullName')}</label>
           <input
             type="text"
             required
@@ -55,7 +57,7 @@ export default function Register() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-300">Email Address</label>
+          <label className="text-xs font-bold text-slate-300">{t('emailAddress')}</label>
           <input
             type="email"
             required
@@ -82,14 +84,14 @@ export default function Register() {
           disabled={loading}
           className="w-full py-3.5 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-transform active:scale-95 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 shadow-cyan-500/20"
         >
-          {loading ? 'Creating Account...' : 'Create Account'}
+          {loading ? 'Creating Account...' : t('createAccount')}
         </button>
       </form>
 
       <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-800/80">
         Already have an account?{' '}
         <Link to="/login" className="text-cyan-400 font-bold hover:underline">
-          Sign In
+          {t('signIn')}
         </Link>
       </div>
     </div>

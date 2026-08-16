@@ -11,9 +11,9 @@ export default function BrandLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }
   }
 
   const badgeSizes = {
-    sm: 'w-8 h-8 text-sm',
-    md: 'w-11 h-11 text-lg',
-    lg: 'w-14 h-14 text-2xl'
+    sm: 'w-8 h-8 text-xs',
+    md: 'w-10 h-10 text-sm',
+    lg: 'w-12 h-12 text-base'
   }
 
   const textSizes = {
@@ -34,11 +34,15 @@ export default function BrandLogo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }
           />
         </div>
       ) : (
-        <div className="flex items-center gap-3">
-          {/* High Visibility Fallback Badge */}
+        <div className="flex items-center gap-2.5">
+          {/* High Visibility Fallback Badge with SVG Fish */}
           <div className={`${badgeSizes[size]} rounded-2xl bg-gradient-to-tr from-cyan-500 via-sky-400 to-teal-300 p-[2px] shadow-lg shadow-cyan-500/30`}>
             <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center font-black text-cyan-300">
-              🐟
+              <svg className="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-3.44 6-7 6s-7.56-2.54-8.5-6z" />
+                <path d="M18 12h.01" />
+                <path d="M2 10l4.5 2L2 14" />
+              </svg>
             </div>
           </div>
           <div className={`font-brand ${textSizes[size]} font-black tracking-wider uppercase flex items-center gap-1`}>

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { fetchSupabaseProducts } from '../services/supabaseClient'
 import { useCart } from '../context/CartContext'
-import { useLocation } from '../context/LocationContext'
+import { useLanguage } from '../context/LanguageContext'
 import { AuthContext } from '../context/AuthContext'
 
 interface Product {
@@ -27,30 +27,30 @@ interface Product {
 const BANNERS = [
   {
     id: 1,
-    tag: '🐟 FRESH CATCH OF THE DAY',
-    title: 'Seer Fish & White Pomfret',
-    subtitle: 'Sourced daily from coastal boats. 100% Chemical-Free, descaled & temperature controlled.',
-    cta: 'Shop Fresh Fish',
+    tagKey: 'banner1Tag',
+    titleKey: 'banner1Title',
+    subtitleKey: 'banner1Subtitle',
+    ctaKey: 'banner1Cta',
     bg: 'from-slate-950 via-sky-950 to-cyan-950',
     accentColor: 'text-cyan-400',
     image: 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: 2,
-    tag: '✨ NEW ARRIVAL UPDATE',
-    title: 'Jumbo Tiger Prawns & Mud Crabs',
-    subtitle: 'Cleaned, deshelled & deveined. Ready to cook immediately for spicy roasts & curries.',
-    cta: 'Explore Shellfish',
+    tagKey: 'banner2Tag',
+    titleKey: 'banner2Title',
+    subtitleKey: 'banner2Subtitle',
+    ctaKey: 'banner2Cta',
     bg: 'from-slate-950 via-indigo-950 to-blue-950',
     accentColor: 'text-amber-400',
     image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=800&q=80'
   },
   {
     id: 3,
-    tag: '🎉 WEEKEND SPECIAL OFFER',
-    title: 'Flat ₹100 OFF on Orders Above ₹499',
-    subtitle: 'Use coupon code OCEAN100 at checkout. Fast 90-Minute delivery guaranteed.',
-    cta: 'Claim Discount',
+    tagKey: 'banner3Tag',
+    titleKey: 'banner3Title',
+    subtitleKey: 'banner3Subtitle',
+    ctaKey: 'banner3Cta',
     bg: 'from-slate-950 via-cyan-950 to-emerald-950',
     accentColor: 'text-emerald-400',
     image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80'
@@ -59,7 +59,8 @@ const BANNERS = [
 
 export default function Home() {
   const navigate = useNavigate()
-  const auth = React.useContext(AuthContext)
+  const auth = useContext(AuthContext)
+  const { t } = useLanguage()
   const isLoggedIn = Boolean(auth?.user)
 
   const [products, setProducts] = useState<Product[]>([])
@@ -68,134 +69,158 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'FEATURED' | 'LOW_HIGH' | 'HIGH_LOW' | 'RATING'>('FEATURED')
+  const [viewMode, setViewMode] = useState<'MENU' | 'GRID'>('MENU')
 
   const [selectedWeights, setSelectedWeights] = useState<{ [key: string]: number }>({})
   const [selectedCuts, setSelectedCuts] = useState<{ [key: string]: string }>({})
 
-  // Carousel Banner State (Right to Left Slide)
+  // Carousel Banner State
   const [currentSlide, setCurrentSlide] = useState(0)
 
   const { addToCart, items } = useCart()
-  const { location, setIsModalOpen } = useLocation()
 
   const categories = [
-    'All',
-    'Sea Fish',
-    'Freshwater Fish',
-    'Prawns & Shrimps',
-    'Crabs & Shellfish',
-    'Ready to Cook',
-    'Combo Packs'
+    { key: 'All', labelKey: 'all' },
+    { key: 'Sea Fish', labelKey: 'seaFish' },
+    { key: 'Freshwater Fish', labelKey: 'freshwaterFish' },
+    { key: 'Prawns & Shrimps', labelKey: 'prawnsShrimps' },
+    { key: 'Crabs & Shellfish', labelKey: 'crabsShellfish' },
+    { key: 'Ready to Cook', labelKey: 'readyToCook' },
+    { key: 'Combo Packs', labelKey: 'comboPacks' }
   ]
 
-  // Banner Auto-Play Slider (Right to Left every 4s)
+  // Banner Auto-Play Slider
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % BANNERS.length)
-    }, 4000)
+    }, 4500)
     return () => clearInterval(timer)
   }, [])
 
-const FALLBACK_PRODUCTS: Product[] = [
-  {
-    _id: 'prod_seer_1',
-    name: 'Seer Fish (Surmai) Medium - Steak Cut',
-    description: 'Cleaned, descaled & cut into firm steaks. Known for its firm texture & rich flavor. Best for Surmai Fry and coastal curries.',
-    category: 'Sea Fish',
-    images: ['https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'],
-    weights: [
-      { label: '300g (Net Wt: 300g | Gross Wt: 450g)', price: 449 },
-      { label: '500g (Net Wt: 500g | Gross Wt: 750g)', price: 699 }
-    ],
-    cuttingOptions: ['Steak Cut', 'Curry Cut', 'Boneless Cubes'],
-    stock: 45,
-    badge: 'Bestseller',
-    netWeight: '300g',
-    grossWeight: '450g',
-    pieces: '4-6 Pcs',
-    deliveryTime: 'Today in 90 mins',
-    rating: 4.9,
-    reviewsCount: 1420
-  },
-  {
-    _id: 'prod_pomfret_2',
-    name: 'White Pomfret - Whole Cleaned & Gutted',
-    description: 'Delicate texture, mild sweet taste. Descaled, degutted and thoroughly cleaned. Ideal for Tandoori Pomfret fry or Goan Fish Curry.',
-    category: 'Sea Fish',
-    images: ['https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80'],
-    weights: [
-      { label: '350g (Net Wt: 350g | Gross Wt: 500g)', price: 599 }
-    ],
-    cuttingOptions: ['Whole Cleaned & Gutted', 'Fry Cut'],
-    stock: 30,
-    badge: 'Top Rated',
-    netWeight: '350g',
-    grossWeight: '500g',
-    pieces: '2 Pcs',
-    deliveryTime: 'Today in 90 mins',
-    rating: 4.8,
-    reviewsCount: 980
-  },
-  {
-    _id: 'prod_prawns_3',
-    name: 'Freshwater Large Prawns - Cleaned & Deveined',
-    description: 'Juicy, tender prawns completely cleaned, deshelled, and deveined. Ready to cook immediately for Prawn Butter Masala.',
-    category: 'Prawns & Shrimps',
-    images: ['https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=600&q=80'],
-    weights: [
-      { label: '250g (Net Wt: 250g | Gross Wt: 400g)', price: 379 }
-    ],
-    cuttingOptions: ['Cleaned & Deveined', 'Tail On'],
-    stock: 60,
-    badge: 'Bestseller',
-    netWeight: '250g',
-    grossWeight: '400g',
-    pieces: '15-20 Pcs',
-    deliveryTime: 'Today in 90 mins',
-    rating: 4.9,
-    reviewsCount: 2150
-  },
-  {
-    _id: 'prod_rohu_4',
-    name: 'Rohu (Rui) - Medium Curry Cut (With Head)',
-    description: 'Freshwater Rohu descaled and cut into neat pieces including head. A staple for authentic Bengali Machher Jhol and North Indian curry.',
-    category: 'Freshwater Fish',
-    images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=600&q=80'],
-    weights: [
-      { label: '500g (Net Wt: 500g | Gross Wt: 700g)', price: 219 }
-    ],
-    cuttingOptions: ['Bengali Curry Cut', 'Without Head'],
-    stock: 80,
-    badge: 'Fresh Catch',
-    netWeight: '500g',
-    grossWeight: '700g',
-    pieces: '7-10 Pcs',
-    deliveryTime: 'Today in 90 mins',
-    rating: 4.8,
-    reviewsCount: 1100
-  }
-]
+  const FALLBACK_PRODUCTS: Product[] = [
+    {
+      _id: 'p1',
+      name: 'Seer Fish (Surmai) Medium - Steak Cut',
+      description: 'Cleaned, descaled & cut into firm steaks. Known for its firm texture & rich flavor. Best for Surmai Fry and coastal curries.',
+      category: 'Sea Fish',
+      images: ['https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'],
+      weights: [{ label: '300g (Net Wt: 300g)', price: 449 }, { label: '500g (Net Wt: 500g)', price: 699 }],
+      cuttingOptions: ['Steak Cut', 'Curry Cut', 'Boneless Cubes'],
+      stock: 45,
+      badge: 'Bestseller',
+      netWeight: '300g',
+      grossWeight: '450g',
+      pieces: '4-6 Pcs',
+      deliveryTime: 'Today in 90 mins',
+      rating: 4.9,
+      reviewsCount: 1420
+    },
+    {
+      _id: 'p2',
+      name: 'White Pomfret - Whole Cleaned & Gutted',
+      description: 'Delicate texture, mild sweet taste. Descaled, degutted and thoroughly cleaned. Ideal for Tandoori Pomfret fry or Goan Fish Curry.',
+      category: 'Sea Fish',
+      images: ['https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80'],
+      weights: [{ label: '350g (Net Wt: 350g)', price: 599 }],
+      cuttingOptions: ['Whole Cleaned', 'Fry Cut'],
+      stock: 30,
+      badge: 'Top Rated',
+      netWeight: '350g',
+      grossWeight: '500g',
+      pieces: '2 Pcs',
+      deliveryTime: 'Today in 90 mins',
+      rating: 4.8,
+      reviewsCount: 980
+    },
+    {
+      _id: 'p3',
+      name: 'Freshwater Large Prawns - Cleaned & Deveined',
+      description: 'Juicy, tender prawns completely cleaned, deshelled, and deveined. Ready to cook immediately for Prawn Butter Masala or Golden Fry.',
+      category: 'Prawns & Shrimps',
+      images: ['https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=600&q=80'],
+      weights: [{ label: '250g (Net Wt: 250g)', price: 379 }, { label: '500g (Net Wt: 500g)', price: 699 }],
+      cuttingOptions: ['Cleaned & Deveined', 'Tail On'],
+      stock: 60,
+      badge: 'Bestseller',
+      netWeight: '250g',
+      grossWeight: '400g',
+      pieces: '15-20 Pcs',
+      deliveryTime: 'Today in 90 mins',
+      rating: 4.9,
+      reviewsCount: 2150
+    },
+    {
+      _id: 'p4',
+      name: 'Black Tiger Prawns Jumbo - Deveined',
+      description: 'Massive, meaty king tiger prawns with shell tail on. Sweet ocean taste, perfect for sizzling garlic pepper roasts.',
+      category: 'Prawns & Shrimps',
+      images: ['https://images.unsplash.com/photo-1559742811-822873691df8?auto=format&fit=crop&w=600&q=80'],
+      weights: [{ label: '350g (Net Wt: 350g)', price: 549 }],
+      cuttingOptions: ['Tail On Deveined', 'Butterfly Cut'],
+      stock: 25,
+      badge: 'Premium',
+      netWeight: '350g',
+      grossWeight: '550g',
+      pieces: '8-10 Pcs',
+      deliveryTime: 'Today in 90 mins',
+      rating: 4.9,
+      reviewsCount: 840
+    },
+    {
+      _id: 'p5',
+      name: 'Rohu Freshwater Fish - Medium Curry Cut',
+      description: 'Fresh freshwater sweet-water fish sourced daily. Cleaned, descaled & cut into firm curry steaks.',
+      category: 'Freshwater Fish',
+      images: ['https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=600&q=80'],
+      weights: [{ label: '500g (Net Wt: 500g)', price: 289 }, { label: '1kg (Net Wt: 1000g)', price: 549 }],
+      cuttingOptions: ['Curry Cut (with Head)', 'Curry Cut (No Head)', 'Steak Cut'],
+      stock: 50,
+      badge: 'Popular',
+      netWeight: '500g',
+      grossWeight: '750g',
+      pieces: '6-8 Pcs',
+      deliveryTime: 'Today in 90 mins',
+      rating: 4.7,
+      reviewsCount: 1650
+    },
+    {
+      _id: 'p6',
+      name: 'Live Mud Crabs - Cleaned & Halved',
+      description: 'Premium live mud crabs with succulent claw meat. Thoroughly deshelled and halved for authentic pepper crab curry.',
+      category: 'Crabs & Shellfish',
+      images: ['https://images.unsplash.com/photo-1548811265-5c1a1660d5b5?auto=format&fit=crop&w=600&q=80'],
+      weights: [{ label: '500g (Net Wt: 500g)', price: 649 }],
+      cuttingOptions: ['Cleaned & Halved', 'Whole Cleaned'],
+      stock: 20,
+      badge: 'Exotic Catch',
+      netWeight: '500g',
+      grossWeight: '700g',
+      pieces: '2-3 Crabs',
+      deliveryTime: 'Today in 90 mins',
+      rating: 4.8,
+      reviewsCount: 720
+    }
+  ]
 
   useEffect(() => {
     async function loadProducts() {
-      setLoading(true)
       try {
-        const supaProducts = await fetchSupabaseProducts()
-        if (supaProducts && supaProducts.length > 0) {
-          const mapped = supaProducts.map((p: any) => ({
-            _id: p.id || p._id,
+        const supaData = await fetchSupabaseProducts()
+        if (supaData && supaData.length > 0) {
+          const mapped = supaData.map((p: any) => ({
+            _id: p.id,
             name: p.name,
             description: p.description,
             category: p.category,
-            images: p.images || [],
-            weights: p.weights || [],
-            cuttingOptions: p.cuttingOptions || p.cutting_options || [],
-            stock: p.stock ?? 50,
+            images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'],
+            weights: Array.isArray(p.weights) && p.weights.length > 0 ? p.weights : [{ label: '300g', price: 299 }],
+            cuttingOptions: Array.isArray(p.cutting_options) && p.cutting_options.length > 0 ? p.cutting_options : ['Curry Cut', 'Steak Cut'],
+            stock: p.stock || 50,
             badge: p.badge,
-            netWeight: p.netWeight || p.net_weight,
-            grossWeight: p.grossWeight || p.gross_weight,
-            pieces: p.pieces,
-            deliveryTime: p.deliveryTime || p.delivery_time,
+            netWeight: p.net_weight || '300g',
+            grossWeight: p.gross_weight || '450g',
+            pieces: p.pieces || '4-6 Pcs',
+            deliveryTime: p.delivery_time || 'Today in 90 mins',
             rating: p.rating || 4.8,
             reviewsCount: p.reviewsCount || p.reviews_count || 120
           }))
@@ -216,7 +241,7 @@ const FALLBACK_PRODUCTS: Product[] = [
         }
       } catch (err: any) {}
 
-      // Ultimate catalog fallback guarantee
+      // Fallback
       setProducts(FALLBACK_PRODUCTS)
       setError('')
     }
@@ -261,8 +286,8 @@ const FALLBACK_PRODUCTS: Product[] = [
   }
 
   return (
-    <div className="space-y-8 pb-12 font-sans">
-      {/* Dynamic Right-to-Left Sliding Banner Carousel */}
+    <div className="space-y-8 pb-16 font-sans">
+      {/* Sliding Banner Carousel */}
       <section className="relative rounded-3xl overflow-hidden border border-cyan-500/20 shadow-2xl bg-slate-950 h-[340px] sm:h-[300px]">
         <div className="relative w-full h-full overflow-hidden">
           {BANNERS.map((banner, idx) => {
@@ -278,15 +303,15 @@ const FALLBACK_PRODUCTS: Product[] = [
               >
                 <div className="max-w-xl space-y-3 z-10">
                   <span className="inline-block px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded-full text-xs font-black uppercase tracking-wider border border-cyan-500/30">
-                    {banner.tag}
+                    {t(banner.tagKey)}
                   </span>
 
                   <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                    {banner.title}
+                    {t(banner.titleKey)}
                   </h1>
 
                   <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-lg">
-                    {banner.subtitle}
+                    {t(banner.subtitleKey)}
                   </p>
 
                   <div className="pt-2 flex items-center gap-4">
@@ -294,21 +319,21 @@ const FALLBACK_PRODUCTS: Product[] = [
                       href="#catalog-grid"
                       className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/25 transition-transform active:scale-95"
                     >
-                      {banner.cta}
+                      {t(banner.ctaKey)}
                     </a>
                   </div>
                 </div>
 
                 {/* Banner Thumbnail Photo */}
                 <div className="hidden md:block w-72 h-48 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
-                  <img src={banner.image} alt={banner.title} className="w-full h-full object-cover" />
+                  <img src={banner.image} alt={t(banner.titleKey)} className="w-full h-full object-cover" />
                 </div>
               </div>
             )
           })}
         </div>
 
-        {/* Carousel Slider Controls (Dots & Arrows) */}
+        {/* Carousel Slider Controls */}
         <div className="absolute bottom-4 left-6 right-6 z-20 flex items-center justify-between pointer-events-auto">
           {/* Indicator Dots */}
           <div className="flex items-center gap-2">
@@ -329,45 +354,94 @@ const FALLBACK_PRODUCTS: Product[] = [
               onClick={() => setCurrentSlide((currentSlide - 1 + BANNERS.length) % BANNERS.length)}
               className="w-8 h-8 rounded-full bg-slate-900/80 border border-white/10 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center transition-colors"
             >
-              ⟨
+              ‹
             </button>
             <button
               onClick={() => setCurrentSlide((currentSlide + 1) % BANNERS.length)}
               className="w-8 h-8 rounded-full bg-slate-900/80 border border-white/10 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center transition-colors"
             >
-              ⟩
+              ›
             </button>
           </div>
         </div>
       </section>
 
-      {/* Search & Sorting Toolbar */}
+      {/* Search, Sorting & Menu Card View Toggle */}
       <section id="catalog-grid" className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Search Bar */}
-        <div className="relative w-full md:w-96">
-          <span className="absolute left-3.5 top-2.5 text-slate-400 text-sm">🔍</span>
+        <div className="relative w-full md:w-80">
+          <span className="absolute left-3.5 top-3 text-slate-400">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
           <input
             type="text"
-            placeholder="Search fresh fish, prawns, pomfret..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:border-cyan-500"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-semibold text-white focus:outline-none focus:border-cyan-500"
           />
         </div>
 
-        {/* Sort By Dropdown */}
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-          <label className="text-xs font-bold text-slate-400 whitespace-nowrap">Sort By:</label>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-slate-950 border border-slate-800 text-xs font-extrabold text-cyan-300 rounded-xl p-2 focus:outline-none"
-          >
-            <option value="FEATURED">Featured Items</option>
-            <option value="LOW_HIGH">Price: Low to High</option>
-            <option value="HIGH_LOW">Price: High to Low</option>
-            <option value="RATING">Top Customer Rating</option>
-          </select>
+        {/* View Mode & Sort Controls */}
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end flex-wrap">
+          {/* Menu Card vs Grid Layout Toggle */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setViewMode('MENU')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all ${
+                viewMode === 'MENU'
+                  ? 'bg-cyan-500 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+              <span>{t('menuCard')}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('GRID')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all ${
+                viewMode === 'GRID'
+                  ? 'bg-cyan-500 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+              <span>Grid</span>
+            </button>
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-400 whitespace-nowrap">{t('sortBy')}:</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-slate-950 border border-slate-800 text-xs font-extrabold text-cyan-300 rounded-xl p-2 focus:outline-none"
+            >
+              <option value="FEATURED">{t('featured')}</option>
+              <option value="LOW_HIGH">{t('lowHigh')}</option>
+              <option value="HIGH_LOW">{t('highLow')}</option>
+              <option value="RATING">{t('rating')}</option>
+            </select>
+          </div>
         </div>
       </section>
 
@@ -376,38 +450,38 @@ const FALLBACK_PRODUCTS: Product[] = [
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
           {categories.map(cat => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              key={cat.key}
+              onClick={() => setSelectedCategory(cat.key)}
               className={`px-4 py-2 rounded-full text-xs font-black whitespace-nowrap transition-all duration-200 ${
-                selectedCategory === cat
+                selectedCategory === cat.key
                   ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20 scale-105'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
               }`}
             >
-              {cat}
+              {t(cat.labelKey)}
             </button>
           ))}
         </div>
       </section>
 
-      {/* Products Catalog Grid */}
+      {/* Products Catalog Header */}
       <section>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-black text-white tracking-tight">
-              {selectedCategory === 'All' ? 'Fish Mart Fresh Catalog' : selectedCategory}
+              {selectedCategory === 'All' ? `${t('appName')} ${t('catalog')}` : selectedCategory}
             </h2>
             <p className="text-xs text-slate-400 font-medium mt-0.5">Cleaned, descaled & temperature controlled 0–4°C</p>
           </div>
           <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1.5 rounded-full">
-            {filteredProducts.length} Items Available
+            {filteredProducts.length} {t('itemsAvailable')}
           </span>
         </div>
 
         {loading ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-cyan-500 border-t-transparent"></div>
-            <div className="mt-4 text-sm font-bold text-cyan-300">Fetching Fish Mart Catalog...</div>
+            <div className="mt-4 text-sm font-bold text-cyan-300">Fetching Seafood Catalog...</div>
           </div>
         ) : error ? (
           <div className="bg-rose-950/40 border border-rose-500/40 text-rose-200 px-4 py-3 rounded-2xl text-sm font-semibold">
@@ -417,7 +491,142 @@ const FALLBACK_PRODUCTS: Product[] = [
           <div className="text-center py-20 bg-slate-900/60 rounded-3xl border border-slate-800 text-slate-400">
             No products match your search or filter.
           </div>
+        ) : viewMode === 'MENU' ? (
+          /* ======================================================== */
+          /* MENU CARD VIEW (Horizontal Restaurant-Style Layout) */
+          /* ======================================================== */
+          <div className="space-y-4">
+            {filteredProducts.map(product => {
+              const weightIdx = selectedWeights[product._id] || 0
+              const activeWeightObj = product.weights?.[weightIdx] || product.weights?.[0]
+              const imageSrc = product.images?.[0] || 'https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?auto=format&fit=crop&w=600&q=80'
+
+              const cartCountForProduct = (Array.isArray(items) ? items : [])
+                .filter(i => i && i.productId === product._id)
+                .reduce((acc, i) => acc + (i.quantity || 1), 0)
+
+              return (
+                <div
+                  key={product._id}
+                  className="bg-slate-900 border border-slate-800 hover:border-cyan-500/40 rounded-3xl p-4 sm:p-5 shadow-xl transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 group"
+                >
+                  {/* Left: Product Thumbnail & Badges */}
+                  <div className="relative w-full md:w-48 h-40 md:h-36 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-950">
+                    <img
+                      src={imageSrc}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                    />
+
+                    {product.badge && (
+                      <span className="absolute top-2.5 left-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-md">
+                        {product.badge}
+                      </span>
+                    )}
+
+                    <span className="absolute bottom-2.5 left-2.5 bg-slate-950/90 text-cyan-300 border border-cyan-500/20 font-bold text-[9px] px-2 py-0.5 rounded-lg">
+                      {product.deliveryTime || 'Today in 90 mins'}
+                    </span>
+                  </div>
+
+                  {/* Middle: Name, Category, Description, Weight & Cuts */}
+                  <div className="flex-1 space-y-2.5 w-full">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-md border border-cyan-500/20">
+                          {product.category}
+                        </span>
+                        {product.pieces && (
+                          <span className="text-[11px] font-semibold text-slate-300 bg-slate-800 px-2 py-0.5 rounded-md">
+                            {product.pieces}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 font-black text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20 text-xs">
+                        <span>★ {product.rating || 4.8}</span>
+                        <span className="text-slate-400 font-normal text-[10px]">({product.reviewsCount || 120})</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-black text-white text-base sm:text-lg leading-snug group-hover:text-cyan-300 transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                        {product.description}
+                      </p>
+                    </div>
+
+                    {/* Weight & Cuts Row */}
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                      {/* Weight Selector */}
+                      {product.weights && product.weights.length > 1 ? (
+                        <div className="w-full sm:w-auto">
+                          <select
+                            value={weightIdx}
+                            onChange={(e) => handleWeightChange(product._id, Number(e.target.value))}
+                            className="text-xs font-bold bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-500"
+                          >
+                            {product.weights.map((w, idx) => (
+                              <option key={idx} value={idx}>
+                                {w.label} - ₹{w.price}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="text-xs font-bold text-slate-300 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl">
+                          {product.netWeight ? `Net: ${product.netWeight}` : 'Standard Pack'}
+                        </div>
+                      )}
+
+                      {/* Cut Preference Selector */}
+                      {product.cuttingOptions && product.cuttingOptions.length > 0 && (
+                        <div className="w-full sm:w-auto flex items-center gap-1.5">
+                          <label className="text-[10px] uppercase font-extrabold text-slate-400">{t('cutPreference')}:</label>
+                          <select
+                            value={selectedCuts[product._id] || product.cuttingOptions[0]}
+                            onChange={(e) => handleCutChange(product._id, e.target.value)}
+                            className="text-xs font-semibold bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-cyan-200 focus:outline-none focus:border-cyan-500"
+                          >
+                            {product.cuttingOptions.map((cut, idx) => (
+                              <option key={idx} value={cut}>{cut}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Price & Add to Cart */}
+                  <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-3 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-800/80 flex-shrink-0">
+                    <div className="text-left md:text-right">
+                      <div className="text-[9px] uppercase font-black text-slate-500">{t('price')}</div>
+                      <div className="text-2xl font-black text-white">
+                        ₹{activeWeightObj?.price || 299}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleAdd(product)}
+                      className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-md ${
+                        cartCountForProduct > 0
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/20'
+                          : 'bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 text-white shadow-cyan-500/20 active:scale-95'
+                      }`}
+                    >
+                      {cartCountForProduct > 0 ? `${t('added')} (${cartCountForProduct})` : t('addToCart')}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         ) : (
+          /* ======================================================== */
+          /* GRID VIEW (Traditional Grid) */
+          /* ======================================================== */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredProducts.map(product => {
               const weightIdx = selectedWeights[product._id] || 0
@@ -448,7 +657,7 @@ const FALLBACK_PRODUCTS: Product[] = [
                     )}
 
                     <span className="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-md text-cyan-300 border border-cyan-500/20 font-bold text-[10px] px-2.5 py-1 rounded-lg">
-                      ⚡ {product.deliveryTime || 'Today in 90 mins'}
+                      {product.deliveryTime || 'Today in 90 mins'}
                     </span>
                   </div>
 
@@ -475,12 +684,12 @@ const FALLBACK_PRODUCTS: Product[] = [
                     {/* Weight & Net Meat Specs */}
                     <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 space-y-1">
                       <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium">
-                        <span>Net Wt: <strong className="text-white font-bold">{product.netWeight || '300g'}</strong></span>
-                        <span>Gross Wt: {product.grossWeight || '450g'}</span>
+                        <span>{t('netWt')}: <strong className="text-white font-bold">{product.netWeight || '300g'}</strong></span>
+                        <span>{t('grossWt')}: {product.grossWeight || '450g'}</span>
                       </div>
                       {product.pieces && (
                         <div className="text-[10px] text-cyan-300/80 font-semibold">
-                          Pack Size: {product.pieces}
+                          {t('packSize')}: {product.pieces}
                         </div>
                       )}
                     </div>
@@ -503,7 +712,7 @@ const FALLBACK_PRODUCTS: Product[] = [
                     {/* Cut Preference Selector */}
                     {product.cuttingOptions && product.cuttingOptions.length > 0 && (
                       <div className="space-y-1">
-                        <label className="text-[10px] uppercase font-extrabold text-slate-400">Cut Preference</label>
+                        <label className="text-[10px] uppercase font-extrabold text-slate-400">{t('cutPreference')}</label>
                         <select
                           value={selectedCuts[product._id] || product.cuttingOptions[0]}
                           onChange={(e) => handleCutChange(product._id, e.target.value)}
@@ -519,7 +728,7 @@ const FALLBACK_PRODUCTS: Product[] = [
                     {/* Price & Add to Cart */}
                     <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 mt-2">
                       <div>
-                        <div className="text-[9px] uppercase font-black text-slate-500">Price</div>
+                        <div className="text-[9px] uppercase font-black text-slate-500">{t('price')}</div>
                         <div className="text-xl font-black text-white">
                           ₹{activeWeightObj?.price || 299}
                         </div>
@@ -533,7 +742,7 @@ const FALLBACK_PRODUCTS: Product[] = [
                             : 'bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 text-white shadow-cyan-500/20 active:scale-95'
                         }`}
                       >
-                        {cartCountForProduct > 0 ? `✓ Added (${cartCountForProduct})` : 'ADD TO CART'}
+                        {cartCountForProduct > 0 ? `${t('added')} (${cartCountForProduct})` : t('addToCart')}
                       </button>
                     </div>
                   </div>

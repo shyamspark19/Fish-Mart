@@ -1,10 +1,12 @@
 import React, { useState, useContext } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { AuthContext } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import BrandLogo from '../components/BrandLogo'
 
 export default function Login() {
   const auth = useContext(AuthContext)!
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('customer@fishmart.test')
@@ -31,7 +33,7 @@ export default function Login() {
       {/* Brand Logo & Header */}
       <div className="flex flex-col items-center justify-center text-center space-y-3">
         <BrandLogo size="lg" />
-        <p className="text-xs font-semibold text-slate-400">Sign in to your Fish Mart account</p>
+        <p className="text-xs font-semibold text-slate-400">Sign in to your {t('appName')} account</p>
       </div>
 
       {errorMsg && (
@@ -42,7 +44,7 @@ export default function Login() {
 
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-300">Email Address</label>
+          <label className="text-xs font-bold text-slate-300">{t('emailAddress')}</label>
           <input
             type="email"
             required
@@ -69,14 +71,14 @@ export default function Login() {
           disabled={loading}
           className="w-full py-3.5 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg transition-transform active:scale-95 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 shadow-cyan-500/20"
         >
-          {loading ? 'Signing In...' : 'Sign In'}
+          {loading ? 'Signing In...' : t('signIn')}
         </button>
       </form>
 
       <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-800/80">
-        New to Fish Mart?{' '}
+        New to {t('appName')}?{' '}
         <Link to="/register" className="text-cyan-400 font-bold hover:underline">
-          Create an Account
+          {t('createAccount')}
         </Link>
       </div>
     </div>

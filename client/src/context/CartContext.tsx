@@ -115,11 +115,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (clean === 'OCEAN100') {
       setCouponCode('OCEAN100')
       setAppliedDiscount(100)
-      return { success: true, message: '🎉 OCEAN100 applied! ₹100 Discount added.' }
+      return { success: true, message: 'OCEAN100 applied! ₹100 Discount added.' }
     } else if (clean === 'FRESH50') {
       setCouponCode('FRESH50')
       setAppliedDiscount(50)
-      return { success: true, message: '🎉 FRESH50 applied! ₹50 Discount added.' }
+      return { success: true, message: 'FRESH50 applied! ₹50 Discount added.' }
     }
     return { success: false, message: 'Invalid Coupon Code. Try OCEAN100 or FRESH50' }
   }

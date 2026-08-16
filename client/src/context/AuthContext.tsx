@@ -2,11 +2,32 @@ import React, { createContext, useEffect, useState } from 'react'
 import * as authService from '../services/authService'
 import { supabase, supabaseSignIn, supabaseSignUp, isSupabaseConfigured } from '../services/supabaseClient'
 
+export interface UserAddress {
+  id: string
+  label: string
+  street: string
+  area: string
+  city: string
+  pincode: string
+  isDefault?: boolean
+}
+
+export interface UserProfile {
+  id: string
+  email: string
+  name: string
+  phone?: string
+  photo?: string
+  role?: string
+  addresses?: UserAddress[]
+}
+
 interface AuthContextValue {
-  user: any | null
+  user: UserProfile | null
   token: string | null
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string, role?: string) => Promise<void>
+  updateProfile: (updatedData: Partial<UserProfile>) => Promise<void>
   logout: () => void
   authSource: 'supabase' | 'backend' | 'demo' | null
 }
@@ -14,7 +35,7 @@ interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any | null>(() => {
+  const [user, setUser] = useState<UserProfile | null>(() => {
     try {
       const raw = localStorage.getItem('fm_user')
       return raw ? JSON.parse(raw) : null
@@ -43,11 +64,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const { data } = await supabase.auth.getUser()
             if (data.user) {
-              const u = {
+              const u: UserProfile = {
                 id: data.user.id,
-                email: data.user.email,
-                name: data.user.user_metadata?.name || data.user.email?.split('@')[0],
-                role: 'CUSTOMER'
+                email: data.user.email || '',
+                name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'Customer',
+                phone: data.user.user_metadata?.phone || '',
+                photo: data.user.user_metadata?.photo || '',
+                role: 'CUSTOMER',
+                addresses: data.user.user_metadata?.addresses || []
               }
               setUser(u)
               localStorage.setItem('fm_user', JSON.stringify(u))
@@ -81,11 +105,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const data = await supabaseSignIn(email, password)
         if (data?.user && data?.session) {
-          const u = {
+          const u: UserProfile = {
             id: data.user.id,
-            email: data.user.email,
+            email: data.user.email || email,
             name: data.user.user_metadata?.name || email.split('@')[0],
-            role: 'CUSTOMER'
+            phone: data.user.user_metadata?.phone || '',
+            photo: data.user.user_metadata?.photo || '',
+            role: 'CUSTOMER',
+            addresses: data.user.user_metadata?.addresses || [
+              {
+                id: 'addr_default',
+                label: 'Home',
+                street: 'No. 45, Nageswara Rao Park Road',
+                area: 'T. Nagar',
+                city: 'Chennai',
+                pincode: '600017',
+                isDefault: true
+              }
+            ]
           }
           const tkn = data.session.access_token
           setToken(tkn)
@@ -104,11 +141,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Demo Fallback Check for default customer account
     if (email === 'customer@fishmart.test' && password === 'Customer123!') {
-      const demoUser = {
+      const demoUser: UserProfile = {
         id: 'demo_customer_1',
         name: 'Demo Customer',
         email,
-        role: 'CUSTOMER'
+        phone: '9876543210',
+        photo: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+        role: 'CUSTOMER',
+        addresses: [
+          {
+            id: 'addr_1',
+            label: 'Home',
+            street: 'Flat 3B, Nageswara Rao Park Road',
+            area: 'T. Nagar',
+            city: 'Chennai',
+            pincode: '600017',
+            isDefault: true
+          },
+          {
+            id: 'addr_2',
+            label: 'Office',
+            street: '7th Floor, Ascendas IT Park, Taramani',
+            area: 'OMR - Navalur',
+            city: 'Chennai',
+            pincode: '600113',
+            isDefault: false
+          }
+        ]
       }
       const demoToken = `demo_token_${Date.now()}`
       setToken(demoToken)
@@ -150,11 +209,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userRole = 'CUSTOMER'
         const data = await supabaseSignUp(email, password, name, userRole)
         if (data?.user) {
-          const u = {
+          const u: UserProfile = {
             id: data.user.id,
-            email: data.user.email,
+            email: data.user.email || email,
             name,
-            role: 'CUSTOMER'
+            phone: '',
+            photo: '',
+            role: 'CUSTOMER',
+            addresses: [
+              {
+                id: 'addr_1',
+                label: 'Home',
+                street: 'No. 12, First Cross Street',
+                area: 'T. Nagar',
+                city: 'Chennai',
+                pincode: '600017',
+                isDefault: true
+              }
+            ]
           }
           const tkn = data.session?.access_token || `supa_token_${Date.now()}`
           setToken(tkn)
@@ -173,7 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Attempt 2: Express Backend API
     try {
-      const resp = await authService.register({ name, email, password, role })
+      const resp = await authService.register({ name, email, password, role: 'CUSTOMER' })
       if (resp.token) {
         setToken(resp.token)
         setUser(resp.user)
@@ -189,11 +261,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Fallback: Local registration session
-    const newUser = {
+    const newUser: UserProfile = {
       id: `user_${Date.now()}`,
       name,
       email,
-      role: 'CUSTOMER'
+      phone: '',
+      photo: '',
+      role: 'CUSTOMER',
+      addresses: [
+        {
+          id: 'addr_1',
+          label: 'Home',
+          street: 'No. 12, First Cross Street',
+          area: 'T. Nagar',
+          city: 'Chennai',
+          pincode: '600017',
+          isDefault: true
+        }
+      ]
     }
     const tokenStr = `local_token_${Date.now()}`
     setToken(tokenStr)
@@ -202,6 +287,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('fm_token', tokenStr)
     localStorage.setItem('fm_user', JSON.stringify(newUser))
     localStorage.setItem('fm_auth_source', 'demo')
+  }
+
+  const updateProfile = async (updatedData: Partial<UserProfile>) => {
+    if (!user) return
+
+    const updatedUser: UserProfile = {
+      ...user,
+      ...updatedData
+    }
+
+    setUser(updatedUser)
+    localStorage.setItem('fm_user', JSON.stringify(updatedUser))
+
+    // If logged in via Supabase, update user metadata
+    if (authSource === 'supabase' && isSupabaseConfigured()) {
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            name: updatedUser.name,
+            phone: updatedUser.phone,
+            photo: updatedUser.photo,
+            addresses: updatedUser.addresses
+          }
+        })
+      } catch (err) {
+        console.warn('Supabase update profile error:', err)
+      }
+    }
   }
 
   const logout = () => {
@@ -218,7 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, authSource }}>
+    <AuthContext.Provider value={{ user, token, login, register, updateProfile, logout, authSource }}>
       {children}
     </AuthContext.Provider>
   )

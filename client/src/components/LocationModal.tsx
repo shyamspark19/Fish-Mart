@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useLocation, LocationData } from '../context/LocationContext'
+import { useLanguage } from '../context/LanguageContext'
 
 const PRESET_LOCATIONS: LocationData[] = [
   {
@@ -54,6 +55,7 @@ const PRESET_LOCATIONS: LocationData[] = [
 
 export default function LocationModal() {
   const { location, setLocation, isModalOpen, setIsModalOpen } = useLocation()
+  const { t } = useLanguage()
   const [selectedLoc, setSelectedLoc] = useState<LocationData>(location)
   const [searchQuery, setSearchQuery] = useState('')
   const [isLocating, setIsLocating] = useState(false)
@@ -77,7 +79,7 @@ export default function LocationModal() {
           setSelectedLoc(newLoc)
           setIsLocating(false)
         },
-        (err) => {
+        () => {
           alert('GPS permission denied or unavailable. Using default location.')
           setIsLocating(false)
         }
@@ -102,14 +104,19 @@ export default function LocationModal() {
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in font-sans">
       <div className="bg-white border border-cyan-100 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-slate-900 via-sky-950 to-cyan-950 text-white p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="p-2.5 bg-cyan-500/20 text-cyan-400 rounded-2xl border border-cyan-500/30 text-xl">📍</span>
+            <div className="p-2.5 bg-cyan-500/20 text-cyan-400 rounded-2xl border border-cyan-500/30">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
             <div>
-              <h2 className="text-xl font-black tracking-tight font-sans">Delivery Location</h2>
+              <h2 className="text-xl font-black tracking-tight">{t('deliveryAddress')}</h2>
               <p className="text-xs text-cyan-200/80">Pin your location for 90-minute fresh delivery</p>
             </div>
           </div>
@@ -126,7 +133,12 @@ export default function LocationModal() {
           {/* Search & Detect */}
           <div className="space-y-3">
             <div className="relative">
-              <span className="absolute left-4 top-3.5 text-slate-400 text-sm">🔍</span>
+              <span className="absolute left-4 top-3.5 text-slate-400 text-sm">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </span>
               <input
                 type="text"
                 placeholder="Search area, landmark or street name..."
@@ -141,7 +153,14 @@ export default function LocationModal() {
               disabled={isLocating}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 rounded-2xl font-bold text-xs uppercase tracking-wider transition-colors shadow-sm"
             >
-              <span>{isLocating ? '📡 Locating GPS...' : '🎯 Use My Current GPS Location'}</span>
+              <svg className="w-4 h-4 text-sky-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="22" y1="12" x2="18" y2="12" />
+                <line x1="6" y1="12" x2="2" y2="12" />
+                <line x1="12" y1="6" x2="12" y2="2" />
+                <line x1="12" y1="22" x2="12" y2="18" />
+              </svg>
+              <span>{isLocating ? 'Locating GPS Position...' : 'Use My Current GPS Location'}</span>
             </button>
           </div>
 
@@ -158,7 +177,10 @@ export default function LocationModal() {
             {/* Floating Map Overlay Info */}
             <div className="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-white/10 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5 overflow-hidden">
-                <span className="text-xl">📍</span>
+                <svg className="w-4 h-4 text-cyan-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
                 <div className="truncate">
                   <div className="text-xs font-bold text-cyan-400">{selectedLoc.area}, {selectedLoc.city}</div>
                   <div className="text-[11px] text-slate-300 truncate">{selectedLoc.address}</div>
@@ -211,7 +233,7 @@ export default function LocationModal() {
         {/* Modal Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-4">
           <div className="text-xs text-slate-500">
-            Delivering to: <strong className="text-slate-800">{selectedLoc.area}</strong>
+            {t('deliveringTo')}: <strong className="text-slate-800">{selectedLoc.area}</strong>
           </div>
           <button
             onClick={handleSave}

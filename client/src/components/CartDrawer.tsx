@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function CartDrawer() {
   const {
@@ -19,6 +20,7 @@ export default function CartDrawer() {
     total
   } = useCart()
 
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [inputCoupon, setInputCoupon] = useState('')
   const [couponMsg, setCouponMsg] = useState<{ success?: boolean; text?: string }>({})
@@ -38,15 +40,19 @@ export default function CartDrawer() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/60 backdrop-blur-sm animate-fade-in font-sans">
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col border-l border-cyan-100">
           {/* Header */}
           <div className="p-5 bg-gradient-to-r from-slate-900 via-sky-950 to-cyan-950 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🛒</span>
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
               <div>
-                <h2 className="text-lg font-black tracking-tight">Your Ocean Cart</h2>
+                <h2 className="text-lg font-black tracking-tight">{t('yourCart')}</h2>
                 <p className="text-xs text-cyan-200">{items.length} unique items</p>
               </div>
             </div>
@@ -62,16 +68,20 @@ export default function CartDrawer() {
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {items.length === 0 ? (
               <div className="text-center py-16 space-y-4">
-                <div className="text-5xl">🐟</div>
-                <h3 className="text-lg font-bold text-slate-800">Your Cart is Empty</h3>
+                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto text-slate-400">
+                  <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">{t('emptyCartTitle')}</h3>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                  Add fresh fish, prawns, or ready-to-cook delicacies from our ocean catalog.
+                  {t('emptyCartDesc')}
                 </p>
                 <button
                   onClick={() => setIsCartDrawerOpen(false)}
                   className="px-5 py-2.5 bg-cyan-500 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-cyan-600 transition-colors shadow-md shadow-cyan-500/20"
                 >
-                  Start Shopping
+                  {t('startShopping')}
                 </button>
               </div>
             ) : (
@@ -133,7 +143,7 @@ export default function CartDrawer() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Coupon Code (OCEAN100)"
+                    placeholder={t('couponPlaceholder')}
                     value={inputCoupon}
                     onChange={(e) => setInputCoupon(e.target.value)}
                     className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold uppercase text-slate-900 focus:outline-none focus:border-cyan-500"
@@ -142,7 +152,7 @@ export default function CartDrawer() {
                     type="submit"
                     className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase hover:bg-slate-800 transition-colors"
                   >
-                    Apply
+                    {t('applyCoupon')}
                   </button>
                 </div>
                 {couponMsg.text && (
@@ -161,27 +171,27 @@ export default function CartDrawer() {
               {/* Price Summary */}
               <div className="space-y-1.5 text-xs font-medium text-slate-600">
                 <div className="flex justify-between">
-                  <span>Item Subtotal</span>
+                  <span>{t('itemSubtotal')}</span>
                   <span className="font-bold text-slate-900">₹{subtotal}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Delivery Charge</span>
+                  <span>{t('deliveryCharge')}</span>
                   <span className="font-bold text-slate-900">
-                    {deliveryFee === 0 ? <strong className="text-emerald-600">FREE</strong> : `₹${deliveryFee}`}
+                    {deliveryFee === 0 ? <strong className="text-emerald-600">{t('free')}</strong> : `₹${deliveryFee}`}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Taxes (5% GST)</span>
+                  <span>{t('taxesGst')}</span>
                   <span className="font-bold text-slate-900">₹{tax}</span>
                 </div>
                 {appliedDiscount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-bold">
-                    <span>Discount</span>
+                    <span>{t('discount')}</span>
                     <span>-₹{appliedDiscount}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-black text-slate-900 pt-2 border-t border-slate-200">
-                  <span>Total Amount</span>
+                  <span>{t('totalAmount')}</span>
                   <span className="text-cyan-700">₹{total}</span>
                 </div>
               </div>
@@ -191,8 +201,11 @@ export default function CartDrawer() {
                 onClick={handleProceedCheckout}
                 className="w-full py-3.5 bg-gradient-to-r from-cyan-500 via-sky-600 to-blue-700 hover:from-cyan-600 hover:to-blue-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/25 transition-transform active:scale-95 flex items-center justify-center gap-2"
               >
-                <span>Proceed to Checkout</span>
-                <span>➔</span>
+                <span>{t('proceedToCheckout')}</span>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
               </button>
             </div>
           )}
