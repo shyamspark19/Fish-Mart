@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 id: data.user.id,
                 email: data.user.email,
                 name: data.user.user_metadata?.name || data.user.email?.split('@')[0],
-                role: data.user.user_metadata?.role || (data.user.email?.includes('admin') ? 'ADMIN' : 'CUSTOMER')
+                role: 'CUSTOMER'
               }
               setUser(u)
               localStorage.setItem('fm_user', JSON.stringify(u))
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: data.user.id,
             email: data.user.email,
             name: data.user.user_metadata?.name || email.split('@')[0],
-            role: data.user.user_metadata?.role || (email.includes('admin') ? 'ADMIN' : 'CUSTOMER')
+            role: 'CUSTOMER'
           }
           const tkn = data.session.access_token
           setToken(tkn)
@@ -102,17 +102,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // Demo Fallback Check for default accounts
-    if (
-      (email === 'customer@fishmart.test' && password === 'Customer123!') ||
-      (email === 'admin@fishmart.test' && password === 'Admin123!')
-    ) {
-      const isDevAdmin = email.includes('admin')
+    // Demo Fallback Check for default customer account
+    if (email === 'customer@fishmart.test' && password === 'Customer123!') {
       const demoUser = {
-        id: isDevAdmin ? 'demo_admin_1' : 'demo_customer_1',
-        name: isDevAdmin ? 'Fish Mart Admin' : 'Demo Customer',
+        id: 'demo_customer_1',
+        name: 'Demo Customer',
         email,
-        role: isDevAdmin ? 'ADMIN' : 'CUSTOMER'
+        role: 'CUSTOMER'
       }
       const demoToken = `demo_token_${Date.now()}`
       setToken(demoToken)
@@ -151,14 +147,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Attempt 1: Supabase Auth if configured
     if (isSupabaseConfigured()) {
       try {
-        const userRole = role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER'
+        const userRole = 'CUSTOMER'
         const data = await supabaseSignUp(email, password, name, userRole)
         if (data?.user) {
           const u = {
             id: data.user.id,
             email: data.user.email,
             name,
-            role: userRole
+            role: 'CUSTOMER'
           }
           const tkn = data.session?.access_token || `supa_token_${Date.now()}`
           setToken(tkn)
@@ -197,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `user_${Date.now()}`,
       name,
       email,
-      role: role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER'
+      role: 'CUSTOMER'
     }
     const tokenStr = `local_token_${Date.now()}`
     setToken(tokenStr)

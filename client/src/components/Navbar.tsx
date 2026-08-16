@@ -14,7 +14,6 @@ export default function Navbar() {
 
   const isAuthPage = routerLocation.pathname === '/login' || routerLocation.pathname === '/register'
   const isLoggedIn = Boolean(auth?.user)
-  const isAdmin = auth?.user?.role === 'ADMIN'
 
   const handleLogout = () => {
     auth?.logout()
@@ -46,7 +45,7 @@ export default function Navbar() {
     )
   }
 
-  // Full Header for Store & Admin Pages
+  // Full Header for Customer Store Pages
   return (
     <header className="bg-slate-900/95 backdrop-blur-md sticky top-0 z-30 border-b border-cyan-500/20 shadow-xl text-white font-sans">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
@@ -72,16 +71,6 @@ export default function Navbar() {
 
         {/* Right Navigation & Authenticated Cart */}
         <nav className="flex items-center gap-3 sm:gap-4">
-          {/* Admin Hub Link (Only for Admin users) */}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className="px-3.5 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-stone-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-md shadow-orange-500/20 transition-transform active:scale-95 flex items-center gap-1.5"
-            >
-              <span>👑 Admin Hub</span>
-            </Link>
-          )}
-
           {/* Store Catalog Link */}
           <Link
             to="/"
@@ -90,8 +79,8 @@ export default function Navbar() {
             Catalog
           </Link>
 
-          {/* Cart Icon & Count Badge (ONLY SHOW FOR CUSTOMERS AFTER LOGIN) */}
-          {isLoggedIn && !isAdmin && (
+          {/* Cart Icon & Count Badge (Only for logged-in customers) */}
+          {isLoggedIn && (
             <button
               onClick={() => setIsCartDrawerOpen(true)}
               className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-600 hover:to-sky-700 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-cyan-500/25 transition-transform active:scale-95 text-white"
@@ -110,7 +99,7 @@ export default function Navbar() {
           {isLoggedIn ? (
             <div className="flex items-center gap-2">
               <span className="hidden lg:inline text-xs font-bold bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-cyan-200">
-                {isAdmin ? '👑' : '👤'} {auth?.user?.name}
+                👤 {auth?.user?.name}
               </span>
               <button
                 onClick={handleLogout}
@@ -125,7 +114,7 @@ export default function Navbar() {
                 to="/login"
                 className="text-xs font-extrabold uppercase tracking-wider bg-gradient-to-r from-cyan-500 to-sky-600 text-white px-4 py-2 rounded-xl hover:from-cyan-600 hover:to-sky-700 transition-transform active:scale-95 shadow-md shadow-cyan-500/20"
               >
-                Sign In / Select Role
+                Sign In
               </Link>
             </div>
           )}

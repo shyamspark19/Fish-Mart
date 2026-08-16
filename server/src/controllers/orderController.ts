@@ -81,10 +81,6 @@ export const createOrder = async (req: Request, res: Response) => {
 
 export const getOrders = async (req: Request, res: Response) => {
   const user = (req as any).user
-  if (user.role === 'ADMIN') {
-    const orders = await Order.find().sort({ createdAt: -1 }).limit(200)
-    return res.json(orders)
-  }
   const orders = await Order.find({ user: user.id }).sort({ createdAt: -1 })
   return res.json(orders)
 }
@@ -92,16 +88,6 @@ export const getOrders = async (req: Request, res: Response) => {
 export const getOrderById = async (req: Request, res: Response) => {
   const { id } = req.params
   const order = await Order.findById(id)
-  if (!order) return res.status(404).json({ message: 'Order not found' })
-  return res.json(order)
-}
-
-export const updateOrderStatus = async (req: Request, res: Response) => {
-  const { id } = req.params
-  const { status } = req.body
-  const allowed = ['PLACED','CONFIRMED','PREPARING','PACKED','OUT_FOR_DELIVERY','DELIVERED','CANCELLED']
-  if (!allowed.includes(status)) return res.status(400).json({ message: 'Invalid status' })
-  const order = await Order.findByIdAndUpdate(id, { orderStatus: status }, { new: true })
   if (!order) return res.status(404).json({ message: 'Order not found' })
   return res.json(order)
 }

@@ -10,7 +10,7 @@ export const register = async (req: Request, res: Response) => {
     if (existing) return res.status(400).json({ message: 'Email already registered' })
 
     const hash = await bcrypt.hash(password, 10)
-    const userRole = role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER'
+    const userRole = 'CUSTOMER'
     const user = await User.create({ name, email, password: hash, role: userRole })
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' })
     return res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role }, token })

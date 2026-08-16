@@ -8,7 +8,6 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Checkout from './pages/Checkout'
 import OrderSuccess from './pages/OrderSuccess'
-import AdminDashboard from './pages/AdminDashboard'
 import { AuthProvider } from './context/AuthContext'
 import { LocationProvider } from './context/LocationContext'
 import { CartProvider } from './context/CartContext'
@@ -26,7 +25,6 @@ export default function App() {
               <main className="p-4 sm:p-6 max-w-7xl mx-auto">
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/checkout" element={<Checkout />} />

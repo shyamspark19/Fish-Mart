@@ -283,15 +283,10 @@ export async function seedInitialData() {
 
   await Product.insertMany(sampleProducts)
 
-  // Create admin, customer and delivery partner users
-  await User.deleteMany({ email: { $in: ['admin@fishmart.test', 'customer@fishmart.test', 'delivery@fishmart.test'] } })
-  const adminPassword = await bcrypt.hash('Admin123!', 10)
+  // Create default demo customer user
+  await User.deleteMany({ email: { $in: ['customer@fishmart.test'] } })
   const customerPassword = await bcrypt.hash('Customer123!', 10)
-  const deliveryPassword = await bcrypt.hash('Delivery123!', 10)
-
-  await User.create({ name: 'Admin User', email: 'admin@fishmart.test', password: adminPassword, role: 'ADMIN' })
   await User.create({ name: 'Customer User', email: 'customer@fishmart.test', password: customerPassword, role: 'CUSTOMER' })
-  await User.create({ name: 'Delivery Partner', email: 'delivery@fishmart.test', password: deliveryPassword, role: 'DELIVERY_PARTNER' })
 
   console.log('Database seeding complete.')
 }

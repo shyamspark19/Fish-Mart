@@ -4,11 +4,9 @@ import cors from 'cors'
 import mongoose from 'mongoose'
 import authRoutes from './routes/auth'
 import productsRoutes from './routes/products'
-import adminRoutes from './routes/admin'
 import errorHandler from './middleware/errorHandler'
 import cartRoutes from './routes/cart'
 import ordersRoutes from './routes/orders'
-import adminProductsRoutes from './routes/adminProducts'
 import { connectDB } from './config/db'
 import { seedInitialData } from './seed'
 
@@ -20,8 +18,6 @@ app.use(express.json())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/products', productsRoutes)
-app.use('/api/admin', adminRoutes)
-app.use('/api/admin/products', adminProductsRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/orders', ordersRoutes)
 
